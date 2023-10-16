@@ -28,8 +28,6 @@ namespace SPH
 		void performNeighborhoodSearch();
 
 		virtual void emittedParticles(FluidModel* model, const unsigned int startIndex);
-		virtual void initParameters();
-
 	public:
 		TimeStepPCISPHtest();
 		virtual ~TimeStepPCISPHtest(void);

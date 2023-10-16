@@ -526,12 +526,16 @@ void Simulation::reset()
 
 void Simulation::setSimulationMethod(const int val)
 {
+	// DEBUG
+	std::cout << "set simulation method" << " " << val  << std::endl;
 	SimulationMethods method = static_cast<SimulationMethods>(val);
 	if ((method < SimulationMethods::WCSPH) || (method >= SimulationMethods::NumSimulationMethods))
 		method = SimulationMethods::DFSPH;
 
-	if (method == m_simulationMethod)
+	if (method == m_simulationMethod){
+		std::cout << "method == m_simulationMethod" << std::endl;
 		return;
+	}
 
 	delete m_timeStep;
 	m_timeStep = nullptr;
@@ -540,6 +544,7 @@ void Simulation::setSimulationMethod(const int val)
 
 	if (method == SimulationMethods::WCSPH)
 	{
+		std::cout << "WCSPH init time-step" << std::endl;
 		m_timeStep = new TimeStepWCSPH();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
@@ -547,6 +552,7 @@ void Simulation::setSimulationMethod(const int val)
 	}
 	else if (method == SimulationMethods::PCISPH)
 	{
+		std::cout << "PCISPH init time-step" << std::endl;
 		m_timeStep = new TimeStepPCISPH();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
@@ -554,6 +560,7 @@ void Simulation::setSimulationMethod(const int val)
 	}
 	else if (method == SimulationMethods::PBF)
 	{
+		std::cout << "PBF init time-step" << std::endl;
 		m_timeStep = new TimeStepPBF();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_POLY6);
@@ -561,6 +568,7 @@ void Simulation::setSimulationMethod(const int val)
 	}
 	else if (method == SimulationMethods::IISPH)
 	{
+		std::cout << "IISPH init time-step" << std::endl;
 		m_timeStep = new TimeStepIISPH();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
@@ -568,6 +576,7 @@ void Simulation::setSimulationMethod(const int val)
 	}
 	else if (method == SimulationMethods::DFSPH)
 	{
+		std::cout << "DFSPH init time-step" << std::endl;
 		m_timeStep = new TimeStepDFSPH();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_PRECOMPUTED_CUBIC);
@@ -575,6 +584,7 @@ void Simulation::setSimulationMethod(const int val)
 	}
 	else if (method == SimulationMethods::PF)
 	{
+		std::cout << "PF init time-step" << std::endl;
 		m_timeStep = new TimeStepPF();
 		m_timeStep->init();
 
@@ -583,21 +593,29 @@ void Simulation::setSimulationMethod(const int val)
 	}
 	else if (method == SimulationMethods::ICSPH)
 	{
+		std::cout << "ICSPH init time-step" << std::endl;
 		m_timeStep = new TimeStepICSPH();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
 		setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
 	}
-
 	else if (method == SimulationMethods::PCISPHtest) {
+				// DEBUG
+		// write to console
+		std::cout << "PCISPHtest init time-step" << std::endl;
 		m_timeStep = new TimeStepPCISPHtest();
+
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
         setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
 	}
 
-	if (m_simulationMethodChanged != nullptr)
+	if (m_simulationMethodChanged != nullptr){
+		
 		m_simulationMethodChanged();
+	}
+
+	std::cout << "end set simulation method" << std::endl;
 }
 
 

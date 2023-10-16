@@ -17,6 +17,8 @@ SimulationDataPCISPHtest::~SimulationDataPCISPHtest(void)
 // INFO: Needs to be called at first in TimeStep constructor
 void SimulationDataPCISPHtest::init()
 {
+	// DEBUG
+	std::cout << "init simulation data" << std::endl;
 	Simulation* sim = Simulation::getCurrent();
 	const unsigned int nModels = sim->numberOfFluidModels();
 
@@ -66,7 +68,7 @@ void SimulationDataPCISPHtest::init()
 		// regular sampling around (0,0,0)
 		auto xi = Vector3r(0,0,0);
 		// actual computation of gradient sums
-		for (auto j = 0; j < fm->numActiveParticles(); i++) {
+		for (auto j = 0; j < fm->numActiveParticles(); j++) {
 			
 			// if sim is 2D
 			if (sim->is2DSimulation()) {

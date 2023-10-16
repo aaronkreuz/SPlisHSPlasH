@@ -18,9 +18,11 @@ TimeStepPCISPHtest::TimeStepPCISPHtest() :
 	TimeStep()
 {
 	m_simulationData.init();
+	std::cout << "init simulation data done" << std::endl;
 	m_counter = 0;
+	m_minIterations = 3;
 
-	Simulation* sim = Simulation::getCurrent();
+	Simulation *sim = Simulation::getCurrent();
 	const unsigned int nModels = sim->numberOfFluidModels();
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
 	{
