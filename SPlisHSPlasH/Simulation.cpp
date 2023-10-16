@@ -10,6 +10,7 @@
 #include "SPlisHSPlasH/DFSPH/TimeStepDFSPH.h"
 #include "SPlisHSPlasH/PF/TimeStepPF.h"
 #include "SPlisHSPlasH/ICSPH/TimeStepICSPH.h"
+#include "SPlisHSPlasH/PCISPHtest/TimeStepPCISPHtest.h"
 #include "BoundaryModel_Akinci2012.h"
 #include "BoundaryModel_Bender2019.h"
 #include "BoundaryModel_Koschier2017.h"
@@ -55,6 +56,7 @@ int Simulation::ENUM_SIMULATION_IISPH = -1;
 int Simulation::ENUM_SIMULATION_DFSPH = -1;
 int Simulation::ENUM_SIMULATION_PF = -1;
 int Simulation::ENUM_SIMULATION_ICSPH = -1;
+int Simulation::ENUM_SIMULATION_PCISPHTEST = -1;
 int Simulation::BOUNDARY_HANDLING_METHOD = -1;
 int Simulation::ENUM_AKINCI2012 = -1;
 int Simulation::ENUM_KOSCHIER2017 = -1;
@@ -257,6 +259,7 @@ void Simulation::initParameters()
 	enumParam->addEnumValue("DFSPH", ENUM_SIMULATION_DFSPH);
 	enumParam->addEnumValue("Projective Fluids", ENUM_SIMULATION_PF);
 	enumParam->addEnumValue("ICSPH", ENUM_SIMULATION_ICSPH);
+	enumParam->addEnumValue("PCISPHtest", ENUM_SIMULATION_PCISPHTEST);
 
 	BOUNDARY_HANDLING_METHOD = createEnumParameter("boundaryHandlingMethod", "Boundary handling method", &m_boundaryHandlingMethod);
 	setGroup(BOUNDARY_HANDLING_METHOD, "Simulation|Simulation");
@@ -584,6 +587,13 @@ void Simulation::setSimulationMethod(const int val)
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
 		setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
+	}
+
+	else if (method == SimulationMethods::PCISPHtest) {
+		m_timeStep = new TimeStepPCISPHtest();
+		m_timeStep->init();
+		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
+        setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
 	}
 
 	if (m_simulationMethodChanged != nullptr)
