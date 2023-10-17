@@ -19,6 +19,8 @@ namespace SPH
 	class TimeStepPCISPHtest : public TimeStep
 	{
 	protected:
+		bool m_enableDebugOutput;
+
 		SimulationDataPCISPHtest m_simulationData;
 		unsigned int m_counter;
 
@@ -28,7 +30,10 @@ namespace SPH
 		void performNeighborhoodSearch();
 
 		virtual void emittedParticles(FluidModel* model, const unsigned int startIndex);
+		virtual void initParameters();
 	public:
+        static int ENABLE_DEBUG_OUTPUT;
+
 		TimeStepPCISPHtest();
 		virtual ~TimeStepPCISPHtest(void);
 

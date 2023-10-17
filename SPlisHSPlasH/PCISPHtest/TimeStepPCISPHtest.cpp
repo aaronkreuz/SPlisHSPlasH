@@ -13,6 +13,7 @@ using namespace SPH;
 using namespace std;
 using namespace GenParam;
 
+int TimeStepPCISPHtest::ENABLE_DEBUG_OUTPUT = -1;
 
 TimeStepPCISPHtest::TimeStepPCISPHtest() :
 	TimeStep()
@@ -45,7 +46,7 @@ TimeStepPCISPHtest::~TimeStepPCISPHtest(void)
 	{
 		FluidModel* model = sim->getFluidModel(fluidModelIndex);
 
-		// missing model->removeFieldByName("density_adv");
+		model->removeFieldByName("density_adv");
 		model->removeFieldByName("pressure");
 		model->removeFieldByName("pressure acceleration");
 	}
@@ -79,12 +80,12 @@ void TimeStepPCISPHtest::step()
 
 	// TODO: 3.2) set pressure and pressureAcceleration to 0
 	for(auto i = 0; i < nFluids; i++) {
-        FluidModel* fModel = sim->getFluidModel(i);
-        for(auto j = 0; j < (int)fModel->numParticles(); j++) {
-            m_simulationData.getPressure(i, j) = 0.0;
-            m_simulationData.getPressureAccel(i, j).setZero();
-        }
-    }
+		FluidModel* fModel = sim->getFluidModel(i);
+		for(auto j = 0; j < (int)fModel->numParticles(); j++) {
+			m_simulationData.getPressure(i, j) = 0.0;
+			m_simulationData.getPressureAccel(i, j).setZero();
+		}
+	}
 
 	m_iterations = 0;
 	// 4) pressure solver
