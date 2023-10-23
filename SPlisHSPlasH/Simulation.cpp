@@ -599,19 +599,16 @@ void Simulation::setSimulationMethod(const int val)
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
 		setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
 	}
-	else if (method == SimulationMethods::PCISPHtest) {
-				// DEBUG
-		// write to console
+	else if (method == SimulationMethods::PCISPHtest)
+	{
 		std::cout << "PCISPHtest init time-step" << std::endl;
 		m_timeStep = new TimeStepPCISPHtest();
-
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
         setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
 	}
 
 	if (m_simulationMethodChanged != nullptr){
-		
 		m_simulationMethodChanged();
 	}
 

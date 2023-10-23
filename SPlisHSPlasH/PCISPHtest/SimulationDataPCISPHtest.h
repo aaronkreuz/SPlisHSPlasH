@@ -51,7 +51,7 @@ namespace SPH
 
 		void emittedParticles(FluidModel* model, const unsigned int startIndex);
 
-		Real getPcisphFactor(const unsigned int fluidIndex, const unsigned int i) {
+		Real getPcisphFactor(const unsigned int fluidIndex) {
             return m_pcisph_factor[fluidIndex];
         }
 

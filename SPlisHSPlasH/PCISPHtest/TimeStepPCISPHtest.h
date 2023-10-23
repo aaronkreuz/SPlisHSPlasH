@@ -30,9 +30,9 @@ namespace SPH
 		void performNeighborhoodSearch();
 
 		virtual void emittedParticles(FluidModel* model, const unsigned int startIndex);
-		virtual void initParameters();
+		// virtual void initParameters();
 	public:
-        static int ENABLE_DEBUG_OUTPUT;
+		// static int ENABLE_DEBUG_OUTPUT;
 
 		TimeStepPCISPHtest();
 		virtual ~TimeStepPCISPHtest(void);

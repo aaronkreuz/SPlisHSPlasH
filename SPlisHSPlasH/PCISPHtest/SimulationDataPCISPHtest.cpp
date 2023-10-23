@@ -36,7 +36,7 @@ void SimulationDataPCISPHtest::init()
 	{
 		FluidModel* fm = sim->getFluidModel(i);
 
-		m_predX[i].resize(fm->numParticles(), fm->getPosition0(i)); // TODO: is this correct?
+		m_predX[i].resize(fm->numParticles(), Vector3r::Zero()); // TODO: is this correct?
 		m_predV[i].resize(fm->numParticles(), Vector3r::Zero()); // TODO: intialize with initial velocity?
 		m_densityAdv[i].resize(fm->numParticles(), 0.0f);
 
@@ -44,10 +44,10 @@ void SimulationDataPCISPHtest::init()
 		m_pressureAccel[i].resize(fm->numParticles(), Vector3r::Zero());
 	}
 
-	// initialize pcisph constant per particle
+	// initialize pcisph constant per fluid
 	// use prototype particle with max. fluid neighbors (index 0 in this case)
-	for (auto i = 0; i < nModels; i++) {
-		FluidModel* fm = sim->getFluidModel(i);
+	for (auto fluidIndex = 0; fluidIndex < nModels; fluidIndex++) {
+		FluidModel* fm = sim->getFluidModel(fluidIndex);
 
 		auto rho0 = fm->getDensity0();
 
@@ -67,9 +67,7 @@ void SimulationDataPCISPHtest::init()
 
 		// regular sampling around (0,0,0)
 		auto xi = Vector3r(0,0,0);
-		// actual computation of gradient sums
-		for (auto j = 0; j < fm->numActiveParticles(); j++) {
-			
+
 			// if sim is 2D
 			if (sim->is2DSimulation()) {
 				auto xj = Vector3r(-supportRadius, -supportRadius, 0);
@@ -117,11 +115,8 @@ void SimulationDataPCISPHtest::init()
                 }
 			}
 
-		}
-
 		// finally compute pcisph factor
-		m_pcisph_factor[i] = static_cast<Real>(1.0) / (beta * (sumGradW.squaredNorm() + sumGradW2));
-
+		m_pcisph_factor[fluidIndex] = static_cast<Real>(1.0) / (beta * (sumGradW.squaredNorm() + sumGradW2));
 	}
 }
 
@@ -158,7 +153,7 @@ void SimulationDataPCISPHtest::reset()
 		FluidModel* fm = sim->getFluidModel(i);
 		for (unsigned int j = 0; j < fm->numActiveParticles(); j++)
 		{
-			m_predX[i][j] = fm->getPosition0(j); // TODO: is this correct?
+			m_predX[i][j].setZero(); // TODO: is this correct?
 			m_predV[i][j].setZero(); // TODO: intialize with initial velocity?
 			m_densityAdv[i][j] = 0.0f; // TODO: float?
 			m_pressure[i][j] = 0.0f; // TODO: float?
@@ -199,8 +194,5 @@ void SimulationDataPCISPHtest::emittedParticles(FluidModel* model, const unsigne
 	{
 		m_predV[fluidModelIndex][j] = model->getVelocity(j);
 		m_predX[fluidModelIndex][j] = model->getPosition(j);
-		m_densityAdv[fluidModelIndex][j] = 0.0f;
-		m_pressure[fluidModelIndex][j] = 0.0f;
-		m_pressureAccel[fluidModelIndex][j].setZero();
 	}
 }
