@@ -1,11 +1,8 @@
-.. SPlisHSPlasH documentation master file, created by
-   sphinx-quickstart on Sat Jun 13 11:43:44 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-   
-.. image:: https://raw.githubusercontent.com/InteractiveComputerGraphics/SPlisHSPlasH/master/doc/images/logo_small.jpg
 
+.. image:: https://raw.githubusercontent.com/InteractiveComputerGraphics/SPlisHSPlasH/master/doc/images/logo_small.jpg
 |
+| An open-source library for the simulation of fluids and solids
+| Web page: https://splishsplash.physics-simulation.org/
 
 .. toctree::
    :maxdepth: 2
