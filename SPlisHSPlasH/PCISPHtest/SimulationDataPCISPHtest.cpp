@@ -1,6 +1,7 @@
 #include "SimulationDataPCISPHtest.h"
 #include "SPlisHSPlasH/SPHKernels.h"
 #include "../Simulation.h"
+#include "Utilities/Logger.h"
 
 using namespace SPH;
 
@@ -46,77 +47,146 @@ void SimulationDataPCISPHtest::init()
 
 	// initialize pcisph constant per fluid
 	// use prototype particle with max. fluid neighbors (index 0 in this case)
-	for (auto fluidIndex = 0; fluidIndex < nModels; fluidIndex++) {
-		FluidModel* fm = sim->getFluidModel(fluidIndex);
+	// for (auto fluidIndex = 0; fluidIndex < nModels; fluidIndex++) {
+	// 	FluidModel* fm = sim->getFluidModel(fluidIndex);
 
-		auto rho0 = fm->getDensity0();
+	// 	auto rho0 = fm->getDensity0();
 
-		// see Solenthaler and Pajarola [SP09]. Note that squared timestep will be added in TimeStepPCISPHtest::step().
-		const Real beta = 2.0f * fm->getVolume(0) * fm->getVolume(0);
-		
-		// compute sum of gradients of kernel function
+	// 	// see Solenthaler and Pajarola [SP09]. Note that squared timestep will be added in TimeStepPCISPHtest::step().
+	// 	const Real beta = 2.0f * fm->getVolume(0) * fm->getVolume(0);
+	//
+	// 	// compute sum of gradients of kernel function
+	// 	Vector3r sumGradW = Vector3r::Zero();
+	//
+	// 	// compute squared sum of gradients of kernel function
+	// 	Real sumGradW2 = 0.0;
+
+	// 	const auto supportRadius = sim->getSupportRadius();
+	// 	const auto squaredSupportRadius = supportRadius * supportRadius;
+	// 	const auto particleRadius = sim->getParticleRadius();
+	// 	const auto diam = static_cast<Real>(2.0) * particleRadius;
+
+	// 	// regular sampling around (0,0,0)
+	// 	auto xi = Vector3r(0,0,0);
+
+	// 		// if sim is 2D
+	// 		if (sim->is2DSimulation()) {
+	// 			auto xj = Vector3r(-supportRadius, -supportRadius, 0);
+
+	// 			while (xj[0] <= supportRadius) {
+	// 				while (xj[1] <= supportRadius) {
+	// 					const auto squaredDist = (xj[0] - xi[0]) * (xj[0] - xi[0]) + (xj[1] - xi[1]) * (xj[1] - xi[1]);
+
+	// 					// check if xj is in the support of xi
+	// 					if (squaredDist <= squaredSupportRadius) {
+
+	// 						auto gradW = sim->gradW(xi - xj);
+	// 						sumGradW += gradW;
+	// 						sumGradW2 += gradW.squaredNorm();
+	// 					}
+	// 					xj[1] += diam;
+	// 				}
+	// 				xj[0] += diam;
+	// 				xj[1] = -supportRadius;
+	// 			}
+	// 		}
+
+	// 		// 3D
+	// 		else {
+	// 			auto xj = Vector3r(-supportRadius, -supportRadius, -supportRadius);
+	// 			while(xj[0] <= supportRadius) {
+	// 				while(xj[1] <= supportRadius) {
+	// 					while(xj[2] <= supportRadius) {
+	//                         const auto squaredDist = (xj[0] - xi[0]) * (xj[0] - xi[0]) + (xj[1] - xi[1]) * (xj[1] - xi[1]) + (xj[2] - xi[2]) * (xj[2] - xi[2]);
+
+	//                         // check if xj is in the support of xi
+	// 						if (squaredDist <= squaredSupportRadius) {
+
+	//                             auto gradW = sim->gradW(xi - xj);
+	//                             sumGradW += gradW;
+	//                             sumGradW2 += gradW.squaredNorm();
+	//                         }
+	//                         xj[2] += diam;
+	//                     }
+	//                     xj[1] += diam;
+	//                     xj[2] = -supportRadius;
+	//                 }
+	//                 xj[0] += diam;
+	//                 xj[1] = -supportRadius;
+	//             }
+	// 		}
+
+	// 	// finally compute pcisph factor
+	// 	m_pcisph_factor[fluidIndex] = static_cast<Real>(1.0) / (beta * (sumGradW.squaredNorm() + sumGradW2));
+	// }
+
+	LOG_INFO << "Initialize PCISPH scaling factor";
+	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
+	{
+		FluidModel *model = sim->getFluidModel(fluidModelIndex);
+		m_pcisph_factor[fluidModelIndex] = 0.0;
+
+		// Find prototype particle
+		// => particle with max. fluid neighbors
+		const Real density0 = model->getDensity0();
+
 		Vector3r sumGradW = Vector3r::Zero();
-		
-		// compute squared sum of gradients of kernel function
 		Real sumGradW2 = 0.0;
+		const Real supportRadius = sim->getSupportRadius();
+		const Real particleRadius = sim->getParticleRadius();
+		const Real diam = static_cast<Real>(2.0) * particleRadius;
+		const Vector3r xi(0,0,0);
 
-		const auto supportRadius = sim->getSupportRadius();
-		const auto squaredSupportRadius = supportRadius * supportRadius;
-		const auto particleRadius = sim->getParticleRadius();
-		const auto diam = static_cast<Real>(2.0) * particleRadius;
-
-		// regular sampling around (0,0,0)
-		auto xi = Vector3r(0,0,0);
-
-			// if sim is 2D
-			if (sim->is2DSimulation()) {
-				auto xj = Vector3r(-supportRadius, -supportRadius, 0);
-
-				while (xj[0] <= supportRadius) {
-					while (xj[1] <= supportRadius) {
-						const auto squaredDist = (xj[0] - xi[0]) * (xj[0] - xi[0]) + (xj[1] - xi[1]) * (xj[1] - xi[1]);
-
+		// use a regular sampling around (0,0,0)
+		if (sim->is2DSimulation())
+		{
+			Vector3r xj = { -supportRadius, -supportRadius, 0.0 };
+			while (xj[0] <= supportRadius)
+			{
+				while (xj[1] <= supportRadius)
+				{
+					// check if xj is in the support of xi
+					if ((xi - xj).squaredNorm() < supportRadius*supportRadius)
+					{
+						const Vector3r gradW = sim->gradW(xi - xj);
+						sumGradW += gradW;
+						sumGradW2 += gradW.squaredNorm();
+					}
+					xj[1] += diam;
+				}
+				xj[0] += diam;
+				xj[1] = -supportRadius;
+			}
+		}
+		else
+		{
+			Vector3r xj = { -supportRadius, -supportRadius, -supportRadius };
+			while (xj[0] <= supportRadius)
+			{
+				while (xj[1] <= supportRadius)
+				{
+					while (xj[2] <= supportRadius)
+					{
 						// check if xj is in the support of xi
-						if (squaredDist <= squaredSupportRadius) {
-
-							auto gradW = sim->gradW(xi - xj);
+						if ((xi - xj).squaredNorm() < supportRadius*supportRadius)
+						{
+							const Vector3r gradW = sim->gradW(xi - xj);
 							sumGradW += gradW;
 							sumGradW2 += gradW.squaredNorm();
 						}
-						xj[1] += diam;
+						xj[2] += diam;
 					}
-					xj[0] += diam;
-					xj[1] = -supportRadius;
+					xj[1] += diam;
+					xj[2] = -supportRadius;
 				}
+				xj[0] += diam;
+				xj[1] = -supportRadius;
+				xj[2] = -supportRadius;
 			}
+		}
 
-			// 3D
-			else {
-				auto xj = Vector3r(-supportRadius, -supportRadius, -supportRadius);
-				while(xj[0] <= supportRadius) {
-					while(xj[1] <= supportRadius) {
-						while(xj[2] <= supportRadius) {
-                            const auto squaredDist = (xj[0] - xi[0]) * (xj[0] - xi[0]) + (xj[1] - xi[1]) * (xj[1] - xi[1]) + (xj[2] - xi[2]) * (xj[2] - xi[2]);
-
-                            // check if xj is in the support of xi
-							if (squaredDist <= squaredSupportRadius) {
-
-                                auto gradW = sim->gradW(xi - xj);
-                                sumGradW += gradW;
-                                sumGradW2 += gradW.squaredNorm();
-                            }
-                            xj[2] += diam;
-                        }
-                        xj[1] += diam;
-                        xj[2] = -supportRadius;
-                    }
-                    xj[0] += diam;
-                    xj[1] = -supportRadius;
-                }
-			}
-
-		// finally compute pcisph factor
-		m_pcisph_factor[fluidIndex] = static_cast<Real>(1.0) / (beta * (sumGradW.squaredNorm() + sumGradW2));
+		const Real beta = static_cast<Real>(2.0) * model->getVolume(0)*model->getVolume(0);
+		m_pcisph_factor[fluidModelIndex] = static_cast<Real>(1.0) / (beta * (sumGradW.squaredNorm() + sumGradW2));
 	}
 }
 

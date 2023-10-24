@@ -29,6 +29,11 @@ namespace SPH
 		*/
 		void performNeighborhoodSearch();
 
+		void solvePressure();
+		void timeIntegration();
+		void pressureSolverIteration(int fluidModelIndex, Real& avg_density_err);
+
+
 		virtual void emittedParticles(FluidModel* model, const unsigned int startIndex);
 		// virtual void initParameters();
 	public:
@@ -38,6 +43,7 @@ namespace SPH
 		virtual ~TimeStepPCISPHtest(void);
 
 		virtual void step();
+		void step2();
 		virtual void reset();
 		virtual void resize();
 	};
