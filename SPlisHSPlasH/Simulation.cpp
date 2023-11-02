@@ -11,6 +11,7 @@
 #include "SPlisHSPlasH/PF/TimeStepPF.h"
 #include "SPlisHSPlasH/ICSPH/TimeStepICSPH.h"
 #include "SPlisHSPlasH/PCISPHtest/TimeStepPCISPHtest.h"
+#include "SPlisHSPlasH/DFSPHvanilla/TimeStepDFSPHvanilla.h"
 #include "BoundaryModel_Akinci2012.h"
 #include "BoundaryModel_Bender2019.h"
 #include "BoundaryModel_Koschier2017.h"
@@ -57,6 +58,7 @@ int Simulation::ENUM_SIMULATION_DFSPH = -1;
 int Simulation::ENUM_SIMULATION_PF = -1;
 int Simulation::ENUM_SIMULATION_ICSPH = -1;
 int Simulation::ENUM_SIMULATION_PCISPHTEST = -1;
+int Simulation::ENUM_SIMULATION_DFSPHVANILLA = -1;
 int Simulation::BOUNDARY_HANDLING_METHOD = -1;
 int Simulation::ENUM_AKINCI2012 = -1;
 int Simulation::ENUM_KOSCHIER2017 = -1;
@@ -260,6 +262,7 @@ void Simulation::initParameters()
 	enumParam->addEnumValue("Projective Fluids", ENUM_SIMULATION_PF);
 	enumParam->addEnumValue("ICSPH", ENUM_SIMULATION_ICSPH);
 	enumParam->addEnumValue("PCISPHtest", ENUM_SIMULATION_PCISPHTEST);
+	enumParam->addEnumValue("DFSPHvanilla", ENUM_SIMULATION_DFSPHVANILLA);
 
 	BOUNDARY_HANDLING_METHOD = createEnumParameter("boundaryHandlingMethod", "Boundary handling method", &m_boundaryHandlingMethod);
 	setGroup(BOUNDARY_HANDLING_METHOD, "Simulation|Simulation");
@@ -526,14 +529,11 @@ void Simulation::reset()
 
 void Simulation::setSimulationMethod(const int val)
 {
-	// DEBUG
-	std::cout << "set simulation method" << " " << val  << std::endl;
 	SimulationMethods method = static_cast<SimulationMethods>(val);
 	if ((method < SimulationMethods::WCSPH) || (method >= SimulationMethods::NumSimulationMethods))
 		method = SimulationMethods::DFSPH;
 
 	if (method == m_simulationMethod){
-		std::cout << "method == m_simulationMethod" << std::endl;
 		return;
 	}
 
@@ -606,6 +606,14 @@ void Simulation::setSimulationMethod(const int val)
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_CUBIC);
         setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_CUBIC);
+	}
+	else if (method == SimulationMethods::DFSPHvanilla)
+	{
+        m_timeStep = new TimeStepDFSPHvanilla();
+        m_timeStep->init();
+        setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_PRECOMPUTED_CUBIC);
+        setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_PRECOMPUTED_CUBIC);
+
 	}
 
 	if (m_simulationMethodChanged != nullptr){
