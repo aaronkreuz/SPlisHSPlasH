@@ -26,9 +26,13 @@ namespace SPH
 			/** \brief advected density */
 			std::vector<std::vector<Real>> m_density_adv;
 
+			std::vector<std::vector<Real>> m_aii;
+
+			std::vector<std::vector<Real>> m_source_term;
+
 			std::vector<std::vector<Real>> m_pressure;
-			/** \brief stores \f$\frac{p}{\rho^2}\f$ value of the divergence solver */
-			std::vector<std::vector<Real>> m_pressure_rho2_V;
+			std::vector<std::vector<Real>> m_pressure_V;
+
 			std::vector<std::vector<Vector3r>> m_pressureAccel;
 
 		public:
@@ -52,7 +56,22 @@ namespace SPH
 			void emittedParticles(FluidModel *model, const unsigned int startIndex);
 
 			std::vector<std::vector<Real>>& getPressureRho2Data() { return m_pressure; }
-			std::vector<std::vector<Real>>& getPressureRho2VData() { return m_pressure_rho2_V; }
+			std::vector<std::vector<Real>>& getPressureRho2VData() { return m_pressure_V; }
+
+			FORCE_INLINE const Real getDiagElement(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_aii[fluidIndex][i];
+			}
+
+			FORCE_INLINE Real& getDiagElement(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_aii[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setDiagElement(const unsigned int fluidIndex, const unsigned int i, const Real aii)
+			{
+				m_aii[fluidIndex][i] = aii;
+			}
 
 			FORCE_INLINE std::vector<Real>& getFactorsModel(const unsigned int fluidIndex) {
 				return m_factor[fluidIndex];
@@ -88,34 +107,48 @@ namespace SPH
 				m_density_adv[fluidIndex][i] = d;
 			}
 
-			FORCE_INLINE const Real getPressureRho2(const unsigned int fluidIndex, const unsigned int i) const
+			FORCE_INLINE const Real getSourceTerm(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_source_term[fluidIndex][i];
+			}
+
+			FORCE_INLINE Real& getSourceTerm(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_source_term[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setSourceTerm(const unsigned int fluidIndex, const unsigned int i, const Real s){
+				m_source_term[fluidIndex][i] = s;
+			}
+
+			FORCE_INLINE const Real getPressure(const unsigned int fluidIndex, const unsigned int i) const
 			{
 				return m_pressure[fluidIndex][i];
 			}
 
-			FORCE_INLINE Real& getPressureRho2(const unsigned int fluidIndex, const unsigned int i)
+			FORCE_INLINE Real& getPressure(const unsigned int fluidIndex, const unsigned int i)
 			{
 				return m_pressure[fluidIndex][i];
 			}
 
-			FORCE_INLINE void setPressureRho2(const unsigned int fluidIndex, const unsigned int i, const Real p)
+			FORCE_INLINE void setPressure(const unsigned int fluidIndex, const unsigned int i, const Real p)
 			{
 				m_pressure[fluidIndex][i] = p;
 			}
 
 			FORCE_INLINE const Real getPressureRho2_V(const unsigned int fluidIndex, const unsigned int i) const
 			{
-				return m_pressure_rho2_V[fluidIndex][i];
+				return m_pressure_V[fluidIndex][i];
 			}
 
 			FORCE_INLINE Real& getPressureRho2_V(const unsigned int fluidIndex, const unsigned int i)
 			{
-				return m_pressure_rho2_V[fluidIndex][i];
+				return m_pressure_V[fluidIndex][i];
 			}
 
 			FORCE_INLINE void setPressureRho2_V(const unsigned int fluidIndex, const unsigned int i, const Real p)
 			{
-				m_pressure_rho2_V[fluidIndex][i] = p;
+				m_pressure_V[fluidIndex][i] = p;
 			}
 
 			FORCE_INLINE Vector3r& getPressureAccel(const unsigned int fluidIndex, const unsigned int i)
