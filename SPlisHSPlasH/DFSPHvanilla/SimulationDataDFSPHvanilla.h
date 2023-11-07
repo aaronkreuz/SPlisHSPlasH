@@ -28,12 +28,15 @@ namespace SPH
 
 			std::vector<std::vector<Real>> m_aii;
 
+			// constant density source term
 			std::vector<std::vector<Real>> m_source_term;
 
 			std::vector<std::vector<Real>> m_pressure;
 			std::vector<std::vector<Real>> m_pressure_V;
 
 			std::vector<std::vector<Vector3r>> m_pressureAccel;
+
+			std::vector<std::vector<Real>> m_psiBoundaryParticles;
 
 		public:
 
@@ -57,6 +60,35 @@ namespace SPH
 
 			std::vector<std::vector<Real>>& getPressureRho2Data() { return m_pressure; }
 			std::vector<std::vector<Real>>& getPressureRho2VData() { return m_pressure_V; }
+
+			FORCE_INLINE const Real getBoundaryPsi(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_psiBoundaryParticles[fluidIndex][i];
+			}
+
+			FORCE_INLINE Real& getBoundaryPsi(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_psiBoundaryParticles[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setBoundaryPsi(const unsigned int fluidIndex, const unsigned int i, const Real p)
+			{
+				m_psiBoundaryParticles[fluidIndex][i] = p;
+			}
+
+			FORCE_INLINE const Real getSourceTerm(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_source_term[fluidIndex][i];
+			}
+
+			FORCE_INLINE Real& getSourceTerm(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_source_term[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setSourceTerm(const unsigned int fluidIndex, const unsigned int i, const Real s){
+				m_source_term[fluidIndex][i] = s;
+			}
 
 			FORCE_INLINE const Real getDiagElement(const unsigned int fluidIndex, const unsigned int i) const
 			{
@@ -105,20 +137,6 @@ namespace SPH
 			FORCE_INLINE void setDensityAdv(const unsigned int fluidIndex, const unsigned int i, const Real d)
 			{
 				m_density_adv[fluidIndex][i] = d;
-			}
-
-			FORCE_INLINE const Real getSourceTerm(const unsigned int fluidIndex, const unsigned int i) const
-			{
-				return m_source_term[fluidIndex][i];
-			}
-
-			FORCE_INLINE Real& getSourceTerm(const unsigned int fluidIndex, const unsigned int i)
-			{
-				return m_source_term[fluidIndex][i];
-			}
-
-			FORCE_INLINE void setSourceTerm(const unsigned int fluidIndex, const unsigned int i, const Real s){
-				m_source_term[fluidIndex][i] = s;
 			}
 
 			FORCE_INLINE const Real getPressure(const unsigned int fluidIndex, const unsigned int i) const

@@ -1,6 +1,8 @@
 #include "SimulationDataDFSPHvanilla.h"
 #include "SPlisHSPlasH/SPHKernels.h"
 #include "SPlisHSPlasH/Simulation.h"
+#include "SPlisHSPlasH/BoundaryModel_Akinci2012.h"
+
 
 using namespace SPH;
 
@@ -11,7 +13,8 @@ SimulationDataDFSPHvanilla::SimulationDataDFSPHvanilla(void) :
 	m_source_term(),
 	m_pressureAccel(),
 	m_density_adv(),
-	m_aii()
+	m_aii(),
+	m_psiBoundaryParticles()
 {
 }
 
@@ -23,7 +26,9 @@ SimulationDataDFSPHvanilla::~SimulationDataDFSPHvanilla(void)
 
 void SimulationDataDFSPHvanilla::init()
 {
+	Simulation* sim = Simulation::getCurrent();
 	int nModels = Simulation::getCurrent()->numberOfFluidModels();
+	int nBoundaries = Simulation::getCurrent()->numberOfBoundaryModels();
 
 	m_factor.resize(nModels);
 	m_density_adv.resize(nModels);
@@ -60,6 +65,7 @@ void SimulationDataDFSPHvanilla::cleanup()
 		m_pressureAccel[i].clear();
 		m_aii[i].clear();
 	}
+
 	m_factor.clear();
 	m_density_adv.clear();
 	m_pressure.clear();
