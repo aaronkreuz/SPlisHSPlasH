@@ -42,10 +42,11 @@ namespace SPH
 		void computeDensityChange(const unsigned int fluidModelIndex, const unsigned int index, const Real h);
 		void computeViscosityForce(const unsigned int fluidModelIndex, const unsigned int index, const Real h);
 
-		void computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, const bool applyBoundaryForces = false);
+		void computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, const std::vector<std::vector<Real>>& pressureList, const bool applyBoundaryForces = false);
 		void compute_aii(const unsigned int fluidModelIndex, const unsigned int i, const Real h);
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 		void computeConstantDensitySourceTerm(const unsigned int fluidModelIndex, const unsigned int i, const Real h);
+		void computeDivergenceSourceTerm(const unsigned int fluidModelIndex, const unsigned int i, const Real h);
 
 		/** Perform the neighborhood search for all fluid particles.
 		*/

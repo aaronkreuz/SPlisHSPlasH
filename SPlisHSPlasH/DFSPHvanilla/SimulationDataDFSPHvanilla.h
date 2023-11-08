@@ -31,12 +31,13 @@ namespace SPH
 			// constant density source term
 			std::vector<std::vector<Real>> m_source_term;
 
+			// divergence source term
+			std::vector<std::vector<Real>> m_source_term_div;
+
 			std::vector<std::vector<Real>> m_pressure;
 			std::vector<std::vector<Real>> m_pressure_V;
 
 			std::vector<std::vector<Vector3r>> m_pressureAccel;
-
-			std::vector<std::vector<Real>> m_psiBoundaryParticles;
 
 		public:
 
@@ -61,19 +62,19 @@ namespace SPH
 			std::vector<std::vector<Real>>& getPressureRho2Data() { return m_pressure; }
 			std::vector<std::vector<Real>>& getPressureRho2VData() { return m_pressure_V; }
 
-			FORCE_INLINE const Real getBoundaryPsi(const unsigned int fluidIndex, const unsigned int i) const
+			FORCE_INLINE const Real getSourceTermDiv(const unsigned int fluidIndex, const unsigned int i) const
 			{
-				return m_psiBoundaryParticles[fluidIndex][i];
+				return m_source_term_div[fluidIndex][i];
 			}
 
-			FORCE_INLINE Real& getBoundaryPsi(const unsigned int fluidIndex, const unsigned int i)
+			FORCE_INLINE Real& getSourceTermDiv(const unsigned int fluidIndex, const unsigned int i)
 			{
-				return m_psiBoundaryParticles[fluidIndex][i];
+				return m_source_term_div[fluidIndex][i];
 			}
 
-			FORCE_INLINE void setBoundaryPsi(const unsigned int fluidIndex, const unsigned int i, const Real p)
+			FORCE_INLINE void setSourceTermDiv(const unsigned int fluidIndex, const unsigned int i, const Real s)
 			{
-				m_psiBoundaryParticles[fluidIndex][i] = p;
+				m_source_term_div[fluidIndex][i] = s;
 			}
 
 			FORCE_INLINE const Real getSourceTerm(const unsigned int fluidIndex, const unsigned int i) const
@@ -154,17 +155,17 @@ namespace SPH
 				m_pressure[fluidIndex][i] = p;
 			}
 
-			FORCE_INLINE const Real getPressureRho2_V(const unsigned int fluidIndex, const unsigned int i) const
+			FORCE_INLINE const Real getPressure_V(const unsigned int fluidIndex, const unsigned int i) const
 			{
 				return m_pressure_V[fluidIndex][i];
 			}
 
-			FORCE_INLINE Real& getPressureRho2_V(const unsigned int fluidIndex, const unsigned int i)
+			FORCE_INLINE Real& getPressure_V(const unsigned int fluidIndex, const unsigned int i)
 			{
 				return m_pressure_V[fluidIndex][i];
 			}
 
-			FORCE_INLINE void setPressureRho2_V(const unsigned int fluidIndex, const unsigned int i, const Real p)
+			FORCE_INLINE void setPressure_V(const unsigned int fluidIndex, const unsigned int i, const Real p)
 			{
 				m_pressure_V[fluidIndex][i] = p;
 			}

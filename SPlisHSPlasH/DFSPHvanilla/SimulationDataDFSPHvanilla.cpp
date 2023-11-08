@@ -11,10 +11,10 @@ SimulationDataDFSPHvanilla::SimulationDataDFSPHvanilla(void) :
 	m_pressure(),
 	m_pressure_V(),
 	m_source_term(),
+	m_source_term_div(),
 	m_pressureAccel(),
 	m_density_adv(),
-	m_aii(),
-	m_psiBoundaryParticles()
+	m_aii()
 {
 }
 
@@ -35,6 +35,7 @@ void SimulationDataDFSPHvanilla::init()
 	m_pressure.resize(nModels);
 	m_pressure_V.resize(nModels);
 	m_source_term.resize(nModels);
+	m_source_term_div.resize(nModels);
 	m_pressureAccel.resize(nModels);
 	m_aii.resize(nModels);
 
@@ -45,6 +46,7 @@ void SimulationDataDFSPHvanilla::init()
 		m_pressure[i].resize(fm->numParticles(), 0.0);
 		m_pressure_V[i].resize(fm->numParticles(), 0.0);
 		m_source_term[i].resize(fm->numParticles(), 0.0);
+		m_source_term_div[i].resize(fm->numParticles(), 0.0);
 		m_pressureAccel[i].resize(fm->numParticles(), Vector3r::Zero());
 		m_aii[i].resize(fm->numParticles(), 0.0);
 	}
@@ -62,6 +64,7 @@ void SimulationDataDFSPHvanilla::cleanup()
 		m_pressure[i].clear();
 		m_pressure_V[i].clear();
 		m_source_term[i].clear();
+		m_source_term_div[i].clear();
 		m_pressureAccel[i].clear();
 		m_aii[i].clear();
 	}
@@ -71,6 +74,7 @@ void SimulationDataDFSPHvanilla::cleanup()
 	m_pressure.clear();
 	m_pressure_V.clear();
 	m_source_term.clear();
+	m_source_term_div.clear();
 	m_pressureAccel.clear();
 	m_aii.clear();
 }
@@ -91,6 +95,7 @@ void SimulationDataDFSPHvanilla::reset()
 			m_factor[i][j] = 0.0;
 			m_pressureAccel[i][j].setZero();
 			m_source_term[i][j] = 0.0;
+			m_source_term_div[i][j] = 0.0;
 			m_aii[i][j] = 0.0;
 		}
 	}
