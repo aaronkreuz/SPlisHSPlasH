@@ -5,14 +5,14 @@
 #define STRINGIZE(x) STRINGIZE_HELPER(x)
 #define WARNING(desc) message(__FILE__ "(" STRINGIZE(__LINE__) ") : Warning: " #desc)
 
-#define GIT_SHA1 "6ff2362324cbc63e21e72d1b5287ab7f6561385e"
+#define GIT_SHA1 "7282f8511f4cce76293089e1005f490667d3d34e"
 #define GIT_REFSPEC "refs/heads/master"
-#define GIT_LOCAL_STATUS "DIRTY"
+#define GIT_LOCAL_STATUS "CLEAN"
 
 #define SPLISHSPLASH_VERSION "2.12.4"
 
 #ifdef DL_OUTPUT
-#pragma WARNING(Local changes not committed.)
+
 #endif
 
 #endif

@@ -161,7 +161,16 @@ void TimeStepDFSPHvanilla::step()
 	// 	}
 	// }
 
-	// TODO ComputeConstantDensitySourceTerm as in dfsph.html
+	// compute constant density source term
+	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
+		FluidModel* fm = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
+		for (int i = 0; i < fm->numActiveParticles(); i++) {
+            computeConstantDensitySourceTerm(fluidModelIndex, i, h);
+
+			// Warm/Cold Start?
+        }
+	}
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Constant Density Solver
@@ -303,13 +312,16 @@ void TimeStepDFSPHvanilla::pressureSolve(){
 
 			density_err = 0.0;
 			for(int i = 0; i < numParticles; i++) {
-				const Real density_adv = m_simulationData.getDensityAdv(fluidModelIndex, i);
+				// const Real density_adv = m_simulationData.getDensityAdv(fluidModelIndex, i);
+
+				const Real sourceTerm = m_simulationData.getSourceTerm(fluidModelIndex, i);
 				Real& pressure_i = m_simulationData.getPressure(fluidModelIndex, i);
 				Real& diag_i = m_simulationData.getDiagElement(fluidModelIndex, i);
 				const Real aij_pj = compute_aij_pj(fluidModelIndex, i);
+
 				// update pressure
 				if (abs(diag_i) > m_eps){
-					pressure_i += (static_cast<Real>(0.5) / diag_i) * (/*source term*/ ((density0 - density_adv) * (static_cast<Real>(1.0) / h)) - aij_pj);
+					pressure_i += (static_cast<Real>(0.5) / diag_i) * (sourceTerm - aij_pj);
 				}
 				else {
 					pressure_i = 0.0;
@@ -317,7 +329,7 @@ void TimeStepDFSPHvanilla::pressureSolve(){
 
 				// clamp to zero
 				pressure_i = max(pressure_i, 0.0f);
-				density_err -= min(/*source term*/ ((density0 - density_adv) * (1.0f/ h) - aij_pj), 0.0f) * h;
+				density_err -= min((sourceTerm - aij_pj), 0.0f) * h;
 			}
 
 			avg_density_err = density_err / numParticles;
@@ -599,7 +611,6 @@ void TimeStepDFSPHvanilla::compute_aii(const unsigned int fluidModelIndex, const
 // 	m_simulationData.setDiagElement(fluidModelIndex, i, factor * (sum1 + sum2.squaredNorm()));
 // }
 
-// original
 Real TimeStepDFSPHvanilla::compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i)
 {
 	Simulation* sim = Simulation::getCurrent();
@@ -639,17 +650,32 @@ Real TimeStepDFSPHvanilla::compute_aij_pj(const unsigned int fluidModelIndex, co
 
 
 void TimeStepDFSPHvanilla::computeConstantDensitySourceTerm (const unsigned int fluidModelIndex, const unsigned int i, const Real h){
+
 	Simulation* sim = Simulation::getCurrent();
-	//Real& sourceTerm = m_simulationData.getSourceTerm(fluidModelIndex, i);
+	const unsigned int nFluids = sim->numberOfFluidModels();
+	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+	Real& sourceTerm = m_simulationData.getSourceTerm(fluidModelIndex, i);
+	const Real density0 = model->getDensity0();
+	const Real density = model->getDensity(i);
+	const Vector3r& xi = model->getPosition(i);
 
-	//forall_fluid_neighbors(
-	//	);
+	Real Drho_Dt = static_cast<Real>(0.0);
 
-	////////////////////////////////////////////////////////////////////////////
-	//// Boundary
-	////////////////////////////////////////////////////////////////////////////
-	//if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012){
-	//	forall_boundary_neighbors();
-	//}
+	forall_fluid_neighbors (
+        const Vector3r gradW = sim->gradW(xi - xj);
+		Drho_Dt += fm_neighbor->getMass(neighborIndex) * (model->getVelocity(i) - fm_neighbor->getVelocity(neighborIndex)).dot(gradW);
+    );
+
+	//////////////////////////////////////////////////////////////////////////
+	// Boundary
+	//////////////////////////////////////////////////////////////////////////
+	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012){
+		forall_boundary_neighbors(
+			const Vector3r gradW = sim->gradW(xi - xj);
+            Drho_Dt += (bm_neighbor->getVolume(neighborIndex) * density0) * (model->getVelocity(i)).dot(gradW);
+		);
+	}
+
+	sourceTerm = 1.0 / h * (density0 - (density + h * Drho_Dt));
 }
 
