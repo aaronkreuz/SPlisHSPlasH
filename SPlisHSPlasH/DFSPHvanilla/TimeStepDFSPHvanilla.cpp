@@ -123,12 +123,11 @@ void TimeStepDFSPHvanilla::step()
 	// INFO: stored in acceleration array of fluid-model
 	// note that neighbors and densities are already determined at this point
 	// only viscosity (XSPH)
-
-	// for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-	// 	for (int i = 0; i < Simulation::getCurrent()->getFluidModel(fluidModelIndex)->numActiveParticles(); i++){
-	// 		computeViscosityForce(fluidModelIndex, i, h);
-	// 	}
-	// }
+	 for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+	 	for (int i = 0; i < Simulation::getCurrent()->getFluidModel(fluidModelIndex)->numActiveParticles(); i++){
+	 		computeViscosityForce(fluidModelIndex, i, h);
+	 	}
+	 }
 
 	// advect velocities based on non-pressure forces incl. gravity
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
@@ -150,12 +149,12 @@ void TimeStepDFSPHvanilla::step()
 		}
 	}
 
-	// compute advected densities after applying non-pressure forces [rho^*]
+	// // compute advected densities after applying non-pressure forces [rho^*]
 	// for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
 	// 	FluidModel* fm = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
 	// 	for (int i = 0; i < fm->numActiveParticles(); i++) {
 	// 		computeDensityAdv(fluidModelIndex, i, h, fm->getDensity0());
-
+			// 
 	// 		// no warm start
 	// 		m_simulationData.getPressure(fluidModelIndex, i) = 0.0;
 	// 	}
@@ -168,6 +167,8 @@ void TimeStepDFSPHvanilla::step()
             computeConstantDensitySourceTerm(fluidModelIndex, i, h);
 
 			// Warm/Cold Start?
+			Real& pressure = m_simulationData.getPressure(fluidModelIndex, i);
+			pressure = 0.0;
         }
 	}
 
@@ -220,7 +221,7 @@ void TimeStepDFSPHvanilla::step()
 	tm->setTime(tm->getTime() + h);
 
 	// update time step size
-	//sim->updateTimeStepSize();
+	sim->updateTimeStepSize();
 
 	performNeighborhoodSearch();
 
@@ -235,26 +236,14 @@ void TimeStepDFSPHvanilla::step()
 		}
 	}
 
-	// TODO: DIVERGENCE SOLVER
+	// compute divergence surce term
 
-	// //////////////////////////////////////////////////////////////////////////
-	// // compute volume/density maps boundary contribution
-	//  if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
-	//  	computeVolumeAndBoundaryX();
-	//  else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
-	//  	computeDensityAndGradient();
-	// /////////////////////////////////////////////////////////////////////////
-
-	// // compute densities
-	// for (auto fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
-	// 	// density stored in fluid model
-	// 	computeDensities(fluidModelIndex);
-	// }
-
-	// // compute alpha factors required for stiffness parameter computation
-	// for (auto fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
-	// 	computeDFSPHFactor(fluidModelIndex);
-	// }
+	//////////////////////////////////////////////////////////////////////////
+	// Divergence-Free Solver  -> make velocity field divergence-free
+	//////////////////////////////////////////////////////////////////////////
+	START_TIMING("divergence-free solver");
+	divergenceSolve();
+	STOP_TIMING_AVG;
 
 }
 
@@ -312,7 +301,7 @@ void TimeStepDFSPHvanilla::pressureSolve(){
 
 			density_err = 0.0;
 			for(int i = 0; i < numParticles; i++) {
-				// const Real density_adv = m_simulationData.getDensityAdv(fluidModelIndex, i);
+				const Real density_adv = m_simulationData.getDensityAdv(fluidModelIndex, i);
 
 				const Real sourceTerm = m_simulationData.getSourceTerm(fluidModelIndex, i);
 				Real& pressure_i = m_simulationData.getPressure(fluidModelIndex, i);
@@ -322,6 +311,7 @@ void TimeStepDFSPHvanilla::pressureSolve(){
 				// update pressure
 				if (abs(diag_i) > m_eps){
 					pressure_i += (static_cast<Real>(0.5) / diag_i) * (sourceTerm - aij_pj);
+					// pressure_i += (static_cast<Real>(0.5) / diag_i) * ((density0 - density_adv) * (static_cast<Real>(1.0) / h)  - aij_pj);
 				}
 				else {
 					pressure_i = 0.0;
@@ -330,6 +320,7 @@ void TimeStepDFSPHvanilla::pressureSolve(){
 				// clamp to zero
 				pressure_i = max(pressure_i, 0.0f);
 				density_err -= min((sourceTerm - aij_pj), 0.0f) * h;
+				// density_err -= min((density0 - density_adv) * (static_cast<Real>(1.0) / h) - aij_pj, 0.0f) * h;
 			}
 
 			avg_density_err = density_err / numParticles;
@@ -479,7 +470,7 @@ void TimeStepDFSPHvanilla::computeDensityAdv(const unsigned int fluidModelIndex,
 	forall_fluid_neighbors(
 		// Real V_j = model->getVolume(neighborIndex);
 		Real mass = fm_neighbor->getMass(neighborIndex);
-		const Vector3r diffPredV = fm_neighbor->getVelocity(neighborIndex) - model->getVelocity(i);
+		const Vector3r diffPredV = model->getVelocity(i) - fm_neighbor->getVelocity(neighborIndex);
 		deltaDensity += mass * diffPredV.dot(sim->gradW(xi - xj));
 	);
 
