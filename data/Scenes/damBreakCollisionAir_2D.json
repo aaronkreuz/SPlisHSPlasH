@@ -19,7 +19,7 @@
         "exponent": 7,
         "velocityUpdateMethod": 0,
         "enableDivergenceSolver": true,
-        "boundaryHandlingMethod": 2
+        "boundaryHandlingMethod": 0
     },
 
     "Materials": [
@@ -33,7 +33,8 @@
 			"vorticity": 0.1, 
 			"viscosityOmega": 0.05,
 			"inertiaInverse": 0.5,
-			"colorMapType": 1
+			"colorMapType": 1,
+            "density0": 1000.0
 		},
 
         {
@@ -41,7 +42,8 @@
             "viscosity": 0.01,
             "viscosityMethod": 1,
             "viscosityOmega": 0.05,
-            "colorMapType": 2
+            "colorMapType": 2,
+            "density0": 1000.0
         }
     ],
 
