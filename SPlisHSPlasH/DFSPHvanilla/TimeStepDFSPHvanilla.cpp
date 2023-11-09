@@ -42,29 +42,10 @@ TimeStepDFSPHvanilla::TimeStepDFSPHvanilla() :
 		FluidModel* model = sim->getFluidModel(fluidModelIndex);
 		model->addField({ "factor", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getFactor(fluidModelIndex, i); } });
 		model->addField({ "advected density", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getDensityAdv(fluidModelIndex, i); } });
-		model->addField({ "p / rho^2", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressure(fluidModelIndex, i); }, true });
-		model->addField({ "p_v / rho^2", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressure_V(fluidModelIndex, i); }, true });
+		model->addField({ "p", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressure(fluidModelIndex, i); }, true });
+		model->addField({ "p_v", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressure_V(fluidModelIndex, i); }, true });
 		model->addField({ "pressure acceleration", FieldType::Vector3, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressureAccel(fluidModelIndex, i)[0]; } });
 	}
-
-	// Precompute values
-	//////////////////////////////////////////////////////////////////////////
-	TimeManager* tm = TimeManager::getCurrent();
-	const Real h = tm->getTimeStepSize();
-
-	performNeighborhoodSearch();
-
-	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
-		computeDensities(fluidModelIndex);
-	}
-
-	// compute diagonal matrix elements for t0
-	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
-		for (int i = 0; i < Simulation::getCurrent()->getFluidModel(fluidModelIndex)->numActiveParticles(); i++) {
-			compute_aii(fluidModelIndex, i, h);
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////
 }
 
 TimeStepDFSPHvanilla::~TimeStepDFSPHvanilla(void)
@@ -77,8 +58,8 @@ TimeStepDFSPHvanilla::~TimeStepDFSPHvanilla(void)
 		FluidModel* model = sim->getFluidModel(fluidModelIndex);
 		model->removeFieldByName("factor");
 		model->removeFieldByName("advected density");
-		model->removeFieldByName("p / rho^2");
-		model->removeFieldByName("p_v / rho^2");
+		model->removeFieldByName("p");
+		model->removeFieldByName("p_v");
 		model->removeFieldByName("pressure acceleration");
 	}
 }
@@ -113,6 +94,47 @@ void TimeStepDFSPHvanilla::step()
 	const unsigned int nFluids = sim->numberOfFluidModels();
 	TimeManager* tm = TimeManager::getCurrent();
 	Real h = tm->getTimeStepSize();
+
+	performNeighborhoodSearch();
+
+	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+		computeDensities(fluidModelIndex);
+	}
+
+	// compute diagonal matrix elements
+	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+		for (int i = 0; i < Simulation::getCurrent()->getFluidModel(fluidModelIndex)->numActiveParticles(); i++) {
+			compute_aii(fluidModelIndex, i, h);
+		}
+	}
+
+	// compute divergence source term
+	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+		for (int i = 0; i < fm->numActiveParticles(); i++) {
+			computeDivergenceSourceTerm(fluidModelIndex, i, h);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Divergence-Free Solver  -> make velocity field divergence-free
+	//////////////////////////////////////////////////////////////////////////
+	START_TIMING("divergence-free solver");
+	divergenceSolve();
+	STOP_TIMING_AVG;
+
+	//////////////////////////////////////////////////////////////////////////
+	// update velocities using pressure accelerations to ensure that velocity field is divergence-free
+	//////////////////////////////////////////////////////////////////////////
+	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
+		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+		const unsigned int numParticles = fm->numActiveParticles();
+		for (int i = 0; i < numParticles; i++){
+			if (fm->getParticleState(i) == ParticleState::Active){
+				fm->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
+			}
+		}
+	}
 
 	// reset the accelerations of the particles and add gravity
 	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
@@ -213,47 +235,6 @@ void TimeStepDFSPHvanilla::step()
 	sim->updateTimeStepSize();
 	// obtain new time step size
 	h = tm->getTimeStepSize();
-
-	performNeighborhoodSearch();
-
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-		computeDensities(fluidModelIndex);
-	}
-
-	for(int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		for (int i = 0; i < fm->numActiveParticles(); i++){
-			compute_aii(fluidModelIndex, i, h);
-		}
-	}
-
-	// compute divergence source term
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		for (int i = 0; i < fm->numActiveParticles(); i++) {
-			computeDivergenceSourceTerm(fluidModelIndex, i, h);
-		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Divergence-Free Solver  -> make velocity field divergence-free
-	//////////////////////////////////////////////////////////////////////////
-	START_TIMING("divergence-free solver");
-	divergenceSolve();
-	STOP_TIMING_AVG;
-
-	//////////////////////////////////////////////////////////////////////////
-	// update velocities using pressure accelerations to ensure that velocity field is divergence-free
-	//////////////////////////////////////////////////////////////////////////
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		const unsigned int numParticles = fm->numActiveParticles();
-		for (int i = 0; i < numParticles; i++){
-			if (fm->getParticleState(i) == ParticleState::Active){
-				fm->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
-			}
-		}
-	}
 
 }
 
