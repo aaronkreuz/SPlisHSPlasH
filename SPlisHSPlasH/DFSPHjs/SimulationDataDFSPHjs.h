@@ -1,5 +1,5 @@
-#ifndef __SimulationDataDFSPHvanilla_h__
-#define __SimulationDataDFSPHvanilla_h__
+#ifndef __SimulationDataDFSPHjs_h__
+#define __SimulationDataDFSPHjs_h__
 
 #include "SPlisHSPlasH/Common.h"
 #include <vector>
@@ -14,11 +14,11 @@ namespace SPH
 	* - [BK15] Jan Bender and Dan Koschier. Divergence-free smoothed particle hydrodynamics. In ACM SIGGRAPH / Eurographics Symposium on Computer Animation, SCA '15, 147-155. New York, NY, USA, 2015. ACM. URL: http://doi.acm.org/10.1145/2786784.2786796
 	* - [BK17] Jan Bender and Dan Koschier. Divergence-free SPH for incompressible and viscous fluids. IEEE Transactions on Visualization and Computer Graphics, 23(3):1193-1206, 2017. URL: http://dx.doi.org/10.1109/TVCG.2016.2578335
 	*/
-	class SimulationDataDFSPHvanilla
+	class SimulationDataDFSPHjs
 	{
 		public:
-			SimulationDataDFSPHvanilla();
-			virtual ~SimulationDataDFSPHvanilla();
+			SimulationDataDFSPHjs();
+			virtual ~SimulationDataDFSPHjs();
 
 		protected:	
 			/** \brief factor \f$\alpha_i\f$ */
@@ -26,11 +26,18 @@ namespace SPH
 			/** \brief advected density */
 			std::vector<std::vector<Real>> m_density_adv;
 
+			std::vector<std::vector<Real>> m_aii;
+
+			// constant density source term
+			std::vector<std::vector<Real>> m_source_term;
+
 			// divergence source term
 			std::vector<std::vector<Real>> m_source_term_div;
 
 			std::vector<std::vector<Real>> m_pressure;
 			std::vector<std::vector<Real>> m_pressure_V;
+
+			std::vector<std::vector<Vector3r>> m_pressureAccel;
 
 		public:
 
@@ -68,6 +75,35 @@ namespace SPH
 			FORCE_INLINE void setSourceTermDiv(const unsigned int fluidIndex, const unsigned int i, const Real s)
 			{
 				m_source_term_div[fluidIndex][i] = s;
+			}
+
+			FORCE_INLINE const Real getSourceTerm(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_source_term[fluidIndex][i];
+			}
+
+			FORCE_INLINE Real& getSourceTerm(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_source_term[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setSourceTerm(const unsigned int fluidIndex, const unsigned int i, const Real s){
+				m_source_term[fluidIndex][i] = s;
+			}
+
+			FORCE_INLINE const Real getDiagElement(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_aii[fluidIndex][i];
+			}
+
+			FORCE_INLINE Real& getDiagElement(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_aii[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setDiagElement(const unsigned int fluidIndex, const unsigned int i, const Real aii)
+			{
+				m_aii[fluidIndex][i] = aii;
 			}
 
 			FORCE_INLINE std::vector<Real>& getFactorsModel(const unsigned int fluidIndex) {
@@ -132,6 +168,21 @@ namespace SPH
 			FORCE_INLINE void setPressure_V(const unsigned int fluidIndex, const unsigned int i, const Real p)
 			{
 				m_pressure_V[fluidIndex][i] = p;
+			}
+
+			FORCE_INLINE Vector3r& getPressureAccel(const unsigned int fluidIndex, const unsigned int i)
+			{
+				return m_pressureAccel[fluidIndex][i];
+			}
+
+			FORCE_INLINE const Vector3r& getPressureAccel(const unsigned int fluidIndex, const unsigned int i) const
+			{
+				return m_pressureAccel[fluidIndex][i];
+			}
+
+			FORCE_INLINE void setPressureAccel(const unsigned int fluidIndex, const unsigned int i, const Vector3r& val)
+			{
+				m_pressureAccel[fluidIndex][i] = val;
 			}
 	};
 }

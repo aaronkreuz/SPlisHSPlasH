@@ -33,7 +33,7 @@
 			"vorticity": 0.1, 
 			"viscosityOmega": 0.05,
 			"inertiaInverse": 0.5,
-			"colorMapType": 1,
+			"colorMapType": 0,
             "density0": 1000.0
 		},
 
@@ -42,7 +42,7 @@
             "viscosity": 0.01,
             "viscosityMethod": 1,
             "viscosityOmega": 0.05,
-            "colorMapType": 2,
+            "colorMapType": 0,
             "density0": 500.0
         }
     ],

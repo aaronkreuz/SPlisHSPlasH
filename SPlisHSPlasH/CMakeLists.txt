@@ -87,7 +87,15 @@ set(DFSPH_VANILLA_HEADER_FILES
 set(DFSPH_VANILLA_SOURCE_FILES
 	DFSPHvanilla/SimulationDataDFSPHvanilla.cpp
 	DFSPHvanilla/TimeStepDFSPHvanilla.cpp)
-	
+
+set(DFSPH_JS_HEADER_FILES
+	DFSPHjs/SimulationDataDFSPHjs.h
+	DFSPHjs/TimeStepDFSPHjs.h)
+
+set(DFSPH_JS_SOURCE_FILES
+	DFSPHjs/SimulationDataDFSPHjs.cpp
+	DFSPHjs/TimeStepDFSPHjs.cpp)	
+
 set(SURFACETENSION_HEADER_FILES
 	SurfaceTension/SurfaceTensionBase.h
 	SurfaceTension/SurfaceTension_Becker2007.h
@@ -278,6 +286,9 @@ add_library(SPlisHSPlasH
 
 	${DFSPH_VANILLA_HEADER_FILES}
 	${DFSPH_VANILLA_SOURCE_FILES}
+
+	${DFSPH_JS_HEADER_FILES}
+	${DFSPH_JS_SOURCE_FILES}
 	
 	${VISCOSITY_HEADER_FILES}
 	${VISCOSITY_SOURCE_FILES}
@@ -339,6 +350,8 @@ source_group("Header Files\\ICSPH" FILES ${ICSPH_HEADER_FILES})
 source_group("Source Files\\ICSPH" FILES ${ICSPH_SOURCE_FILES})
 source_group("Header Files\\DFSPHvanilla" FILES ${DFSPH_VANILLA_HEADER_FILES})
 source_group("Source Files\\DFSPHvanilla" FILES ${DFSPH_VANILLA_SOURCE_FILES})
+source_group("Header Files\\DFSPHjs" FILES ${DFSPH_JS_HEADER_FILES})
+source_group("Source Files\\DFSPHjs" FILES ${DFSPH_JS_SOURCE_FILES})
 source_group("Header Files\\Viscosity" FILES ${VISCOSITY_HEADER_FILES})
 source_group("Source Files\\Viscosity" FILES ${VISCOSITY_SOURCE_FILES})
 source_group("Header Files\\SurfaceTension" FILES ${SURFACETENSION_HEADER_FILES})
