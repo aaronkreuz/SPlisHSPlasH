@@ -35,6 +35,7 @@ namespace SPH
 		void computeVolumeAndBoundaryX();
 		void computeDensityAndGradient(const unsigned int fluidModelIndex, const unsigned int i, const Vector3r &xi);
 		void computeDensityAndGradient();
+		void computeDensitiesForSamePhase(const unsigned int fluidModelIndex);
 
 	public:
 		TimeStep();

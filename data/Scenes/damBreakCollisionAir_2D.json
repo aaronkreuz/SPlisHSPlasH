@@ -6,7 +6,7 @@
         "particleRadius": 0.025,
         "colorMapType": 1,
         "numberOfStepsPerRenderUpdate": 4,
-        "simulationMethod": 8,
+        "simulationMethod": 10,
         "gravitation" : [0.0, -9.81, 0.0],
         "cflMethod": 1,
         "cflFactor": 1,
@@ -24,7 +24,7 @@
 
     "Materials": [
 		{
-			"id": "Fluid",
+			"id": "Liquid",
 			"surfaceTension": 0.2,
 			"surfaceTensionMethod": 0,		
 			"viscosity": 0.01,
@@ -39,9 +39,6 @@
 
         {
             "id": "Air",
-            "viscosity": 0.01,
-            "viscosityMethod": 1,
-            "viscosityOmega": 0.05,
             "colorMapType": 0,
             "density0": 500.0
         }
@@ -65,11 +62,11 @@
 
     "FluidBlocks": [
 		{
-            "id": "Fluid",
+            "id": "Liquid",
 			"denseMode": 0,
 			"start": [-3.0, 0.0, -1],
 			"end": [-1.0, 1.5, 1],
-			"translation": [0.025, 1.5, 0.0],
+			"translation": [0.025, 0.5, 0.0],
 			"scale": [1, 1, 1]
 		},
 

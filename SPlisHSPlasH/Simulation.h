@@ -40,7 +40,22 @@
 		const unsigned int neighborIndex = sim->getNeighbor(fluidModelIndex, fluidModelIndex, i, j); \
 		const Vector3r &xj = model->getPosition(neighborIndex); \
 		code \
-	} 
+	}
+
+#define forall_fluid_neighbors_in_different_phase(code) \
+	for (unsigned int pid = 0; pid < nFluids; pid++) \
+	{ \
+		FluidModel *fm_neighbor = sim->getFluidModelFromPointSet(pid); \
+		if (fm_neighbor->getId() == model->getId()){ \
+			continue; \
+		} \
+		for (unsigned int j = 0; j < sim->numberOfNeighbors(fluidModelIndex, pid, i); j++) \
+			{ \
+				const unsigned int neighborIndex = sim->getNeighbor(fluidModelIndex, pid, i, j); \
+				const Vector3r &xj = fm_neighbor->getPosition(neighborIndex); \
+				code \
+			} \
+	}
 
 /** Loop over the boundary neighbors of all fluid phases.
 * Simulation *sim and unsigned int fluidModelIndex must be defined.
@@ -167,7 +182,7 @@ for (unsigned int pid = 0; pid < nBoundaries; pid++) \
 
 namespace SPH
 {
-	enum class SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, ICSPH, PCISPHtest, DFSPHvanilla, DFSPHjs, NumSimulationMethods};
+	enum class SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, ICSPH, PCISPHtest, DFSPHvanilla, DFSPHjs, DFSPHbubble, NumSimulationMethods};
 	enum class BoundaryHandlingMethods { Akinci2012 = 0, Koschier2017, Bender2019, NumSimulationMethods };
 
 	/** \brief Class to manage the current simulation time and the time step size. 
@@ -218,6 +233,7 @@ namespace SPH
 		static int ENUM_SIMULATION_PCISPHTEST;
 		static int ENUM_SIMULATION_DFSPHVANILLA;
 		static int ENUM_SIMULATION_DFSPHJS;
+		static int ENUM_SIMULATION_DFSPHBUBBLE;
 
 		static int BOUNDARY_HANDLING_METHOD;
 		static int ENUM_AKINCI2012;

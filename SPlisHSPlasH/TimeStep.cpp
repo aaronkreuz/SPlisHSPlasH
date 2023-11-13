@@ -141,6 +141,67 @@ void TimeStep::computeDensities(const unsigned int fluidModelIndex)
 	}
 }
 
+// AK: Used for implementation of [Ihmsen et al. 11] "Animation of air bubbles with SPH"
+void TimeStep::computeDensitiesForSamePhase(const unsigned int fluidModelIndex)
+{
+	Simulation *sim = Simulation::getCurrent();
+	FluidModel *model = sim->getFluidModel(fluidModelIndex);
+	const Real density0 = model->getDensity0();
+	const unsigned int numParticles = model->numActiveParticles();
+	const unsigned int nFluids = sim->numberOfFluidModels();
+	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
+
+#pragma omp parallel default(shared)
+	{
+#pragma omp for schedule(static)
+		for (int i = 0; i < (int) numParticles; i++)
+		{
+			const Vector3r &xi = model->getPosition(i);
+			Real &density = model->getDensity(i);
+			density = model->getVolume(i) * CubicKernel_AVX::W_zero();
+
+			Scalarf8 density_avx(0.0f);
+			Vector3f8 xi_avx(xi);
+
+			//////////////////////////////////////////////////////////////////////////
+			// Fluid
+			//////////////////////////////////////////////////////////////////////////
+			forall_fluid_neighbors_in_same_phase_avx(
+				const Scalarf8 Vj_avx = convert_zero(model->getVolume(0), count);
+				density_avx += Vj_avx * CubicKernel_AVX::W(xi_avx - xj_avx);
+				);
+
+			//////////////////////////////////////////////////////////////////////////
+			// Boundary
+			//////////////////////////////////////////////////////////////////////////
+			if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+			{
+				forall_boundary_neighbors_avx(
+					const Scalarf8 V_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
+					density_avx += V_avx * CubicKernel_AVX::W(xi_avx - xj_avx);
+					);
+				density += density_avx.reduce();
+			}
+			else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
+			{
+				density += density_avx.reduce();
+				forall_density_maps(
+					density += rho;
+					);
+			}
+			else   // Bender2019
+			{
+				density += density_avx.reduce();
+				forall_volume_maps(
+					density += Vj * sim->W(xi - xj);
+					);
+			}
+
+			density *= density0;
+		}
+	}
+}
+
 #else
 
 void TimeStep::computeDensities(const unsigned int fluidModelIndex)
