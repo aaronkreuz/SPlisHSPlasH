@@ -407,6 +407,7 @@ void TimeStepDFSPHjs::divergenceSolve()
 					pressureV_i = 0.0;
 				}
 
+				pressureV_i = max(pressureV_i, 0.0f);
 				divergence_error -= min((sourceTermV - aij_pj), 0.0f) * h;
 			}
 

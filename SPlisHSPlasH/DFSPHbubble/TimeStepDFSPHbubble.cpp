@@ -1,4 +1,4 @@
-#include "TimeStepDFSPHbubble.h"
+﻿#include "TimeStepDFSPHbubble.h"
 #include "SPlisHSPlasH/TimeManager.h"
 #include "SPlisHSPlasH/SPHKernels.h"
 #include <iostream>
@@ -19,6 +19,14 @@ int TimeStepDFSPHbubble::SOLVER_ITERATIONS_V = -1;
 int TimeStepDFSPHbubble::MAX_ITERATIONS_V = -1;
 int TimeStepDFSPHbubble::MAX_ERROR_V = -1;
 int TimeStepDFSPHbubble::USE_DIVERGENCE_SOLVER = -1;
+int TimeStepDFSPHbubble::USE_COHESION_FORCE = -1;
+int TimeStepDFSPHbubble::USE_DRAG_FORCE_ON_LIQ = -1;
+int TimeStepDFSPHbubble::USE_DRAG_FORCE_ON_AIR = -1;
+int TimeStepDFSPHbubble::USE_VISCOSITY = -1;
+int TimeStepDFSPHbubble::USE_BOUYANCY = -1;
+int TimeStepDFSPHbubble::USE_SURFACE_TENSION = -1;
+int TimeStepDFSPHbubble::MAX_K_BOUYANCY = -1;
+int TimeStepDFSPHbubble::MIN_BOUYANCY = -1;
 
 
 TimeStepDFSPHbubble::TimeStepDFSPHbubble() :
@@ -29,7 +37,17 @@ TimeStepDFSPHbubble::TimeStepDFSPHbubble() :
 
 	m_counter = 0;
 	m_iterationsV = 0;
+
 	m_enableDivergenceSolver = true;
+	m_enableCohesionForce = true;
+	m_enableDragForceOnAir = true;
+	m_enableDragForceOnLiq = true;
+	m_enableViscosity = true;
+	m_enableBouyancy = true;
+	m_enableSurfaceTension = true;
+
+	m_minBouyancy = static_cast<Real>(14.0);
+
 	m_maxIterationsV = 100;
 	m_maxErrorV = static_cast<Real>(0.1);
 
@@ -67,6 +85,30 @@ void TimeStepDFSPHbubble::initParameters()
 {
 	TimeStep::initParameters();
 
+	 USE_COHESION_FORCE = createBoolParameter("enableCohesionForce", "Enable cohesion force", &m_enableCohesionForce);
+	 setGroup(USE_COHESION_FORCE, "Simulation|Forces");
+	 setDescription(USE_COHESION_FORCE, "turn cohesion force on/off.");
+
+	 USE_DRAG_FORCE_ON_AIR = createBoolParameter("enableDragForceAir", "Enable drag force on air", &m_enableDragForceOnAir);
+	 setGroup(USE_DRAG_FORCE_ON_AIR, "Simulation|Forces");
+	 setDescription(USE_DRAG_FORCE_ON_AIR, "turn drag force on air on/off.");
+
+	 USE_DRAG_FORCE_ON_LIQ = createBoolParameter("enableDragForceLiquid", "Enable drag force on liquid", &m_enableDragForceOnLiq);
+	 setGroup(USE_DRAG_FORCE_ON_LIQ, "Simulation|Forces");
+	 setDescription(USE_DRAG_FORCE_ON_LIQ, "turn drag force on liquid on/off.");
+
+	 USE_VISCOSITY = createBoolParameter("enableViscosity", "Enable viscosity", &m_enableViscosity);
+	 setGroup(USE_VISCOSITY, "Simulation|Forces");
+	 setDescription(USE_VISCOSITY, "turn viscosity on/off.");
+
+	 USE_BOUYANCY = createBoolParameter("enableBouyancy", "Enable bouyancy", &m_enableBouyancy);
+	 setGroup(USE_BOUYANCY, "Simulation|Forces");
+	 setDescription(USE_BOUYANCY, "turn bouyancy on/off.");
+
+	 USE_SURFACE_TENSION = createBoolParameter("enableSurfaceTension", "Enable surface tension", &m_enableSurfaceTension);
+	 setGroup(USE_SURFACE_TENSION, "Simulation|Forces");
+	 setDescription(USE_SURFACE_TENSION, "turn surface tension on/off.");
+
 	 SOLVER_ITERATIONS_V = createNumericParameter("iterationsV", "Iterations (divergence)", &m_iterationsV);
 	 setGroup(SOLVER_ITERATIONS_V, "Simulation|DFSPH");
 	 setDescription(SOLVER_ITERATIONS_V, "Iterations required by the divergence solver.");
@@ -85,6 +127,11 @@ void TimeStepDFSPHbubble::initParameters()
 	 // USE_DIVERGENCE_SOLVER = createBoolParameter("enableDivergenceSolver", "Enable divergence solver", &m_enableDivergenceSolver);
 	 // setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
 	 // setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
+
+	 MIN_BOUYANCY = createNumericParameter("minBouyancy", "Min. bouyancy", &m_minBouyancy);
+	 setGroup(MIN_BOUYANCY, "Simulation|BUBBLE");
+	 setDescription(MIN_BOUYANCY, "Minimal bouyancy coefficient.");
+	 static_cast<RealParameter*>(getParameter(MIN_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
 }
 
 void TimeStepDFSPHbubble::step()
@@ -174,7 +221,9 @@ void TimeStepDFSPHbubble::step()
 	// INFO: stored in acceleration array of fluid-model
 	// note that neighbors and densities are already determined at this point
 
+	//////////////////////////////////////////////////////////////////////////
 	// Viscosity XSPH
+	//////////////////////////////////////////////////////////////////////////
 	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
 		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
 
@@ -189,24 +238,40 @@ void TimeStepDFSPHbubble::step()
 	 }
 
 	 //////////////////////////////////////////////////////////////////////////
+	 // Surface Tension Force
+	 //////////////////////////////////////////////////////////////////////////
+	 if (m_enableSurfaceTension){
+		computeSurfaceTensionForce(1, h);
+	 }
+
+	 //////////////////////////////////////////////////////////////////////////
 	 // Drag Forces -> Two Way Coupling
 	 //////////////////////////////////////////////////////////////////////////
 	 // Force acting on Air particles
-	 computeDragForce(0, h);
+	 if (m_enableDragForceOnAir)
+		computeDragForce(0, h);
 	 // Force acting on Liquid particles
-	 //computeDragForce(1, h);
+	 if (m_enableDragForceOnLiq)
+		computeDragForce(1, h);
 
 
 	 //////////////////////////////////////////////////////////////////////////
 	 // Buoyancy Force -> only acting on Air particles
 	 //////////////////////////////////////////////////////////////////////////
-	 computeBouyancyForce(0, h);
+	 if (m_enableBouyancy)
+		computeBouyancyForce(0, h);
+
+	 //////////////////////////////////////////////////////////////////////////
+	 // Cohesion Force -> only actiong on Air particles
+	 //////////////////////////////////////////////////////////////////////////
+	 if (m_enableCohesionForce)
+		computeCohesionForce(0, h);
 
 
 	 //////////////////////////////////////////////////////////////////////////
 	 // Currently missing forces:
-	 // AIR: cohesion, buoyancy, drag
-	 // LIQUID: surface tension, drag
+	 // AIR: -
+	 // LIQUID: surface tension
 	 //////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -288,22 +353,6 @@ void TimeStepDFSPHbubble::step()
 
 	// update time step size
 	sim->updateTimeStepSize();
-}
-
-void TimeStepDFSPHbubble::computeViscosityForce(const unsigned int fluidModelIndex, const unsigned i, const Real h) {
-	Simulation* sim = Simulation::getCurrent();
-	FluidModel* model = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
-	Vector3r& accel_i = model->getAcceleration(i);
-	const Vector3r &xi = model->getPosition(i);
-
-	Real factor = 0.01 / h;
-	Vector3r sum = Vector3r::Zero();
-
-	forall_fluid_neighbors_in_same_phase(
-		sum += (model->getMass(neighborIndex) / model->getDensity(neighborIndex)) * (model->getVelocity(neighborIndex) - model->getVelocity(i)) * CubicKernel::W(xi - xj);
-	);
-
-	accel_i += factor * sum;
 }
 
 void TimeStepDFSPHbubble::pressureSolve(){
@@ -685,7 +734,8 @@ void TimeStepDFSPHbubble::computeDragForce(const unsigned int fluidModelIndex, c
 			const Real density_j = fm_neighbor->getDensity(neighborIndex);
 			const Vector3r& vj = fm_neighbor->getVelocity(neighborIndex);
 
-			const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).squaredNorm() + m_eps * (h2)));
+			const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).norm() + m_eps * (h2)));
+			// const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).squaredNorm() + m_eps * (h2)));
 
 			acc_drag += m_j * ((dragConstant*h*m_speedSound)/(density_j + density_i)) * pi_ij * sim->gradW(xi - xj);
 		);
@@ -712,6 +762,72 @@ void TimeStepDFSPHbubble::computeBouyancyForce(const unsigned int fluidModelInde
 		// equation (10)
 		acc_bouyancy = m_minBouyancy * (m_kmax - (m_kmax - 1) * exp(-0.1 * numNeighbors)) * grav;
 		acceleration -= acc_bouyancy;
+	}
+}
+
+void TimeStepDFSPHbubble::computeCohesionForce(const unsigned int fluidModelIndex, const Real h) {
+	Simulation* sim = Simulation::getCurrent();
+	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+	unsigned int nFluids = sim->numberOfFluidModels();
+	unsigned int numParticles = model->numActiveParticles();
+
+	for (int i = 0; i < numParticles; i++){
+		Vector3r& acceleration = model->getAcceleration(i);
+		const Vector3r& xi = model->getPosition(i);
+
+		Vector3r acc_cohesion = Vector3r::Zero();
+
+		forall_fluid_neighbors_in_same_phase(
+			const Real densj = model->getDensity(neighborIndex);
+			acc_cohesion += densj*(xi - xj);
+		);
+
+		acceleration -= m_cohesionConstant * acc_cohesion;
+	}
+}
+
+void TimeStepDFSPHbubble::computeViscosityForce(const unsigned int fluidModelIndex, const unsigned i, const Real h) {
+	Simulation* sim = Simulation::getCurrent();
+	FluidModel* model = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
+	Vector3r& accel_i = model->getAcceleration(i);
+	const Vector3r &xi = model->getPosition(i);
+
+	Real factor = 0.01 / h;
+	Vector3r sum = Vector3r::Zero();
+
+	forall_fluid_neighbors_in_same_phase(
+		sum += (model->getMass(neighborIndex) / model->getDensity(neighborIndex)) * (model->getVelocity(neighborIndex) - model->getVelocity(i)) * CubicKernel::W(xi - xj);
+		);
+
+	accel_i += factor * sum;
+}
+
+void TimeStepDFSPHbubble::computeSurfaceTensionForce(const unsigned int fluidModelIndex, const Real h){
+	Simulation* sim = Simulation::getCurrent();
+	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+	unsigned int nFluids = sim->numberOfFluidModels();
+	unsigned int numParticles = model->numActiveParticles();
+
+	if(model->getId() == "Air") {
+		LOG_ERR << "Surface tension force not implemented for air particles.";
+		return;
+	}
+
+	for (int i = 0; i < numParticles; i++){
+		Vector3r& acceleration = model->getAcceleration(i);
+		const Real massi = model->getMass(i);
+		const Vector3r xi = model->getPosition(i);
+
+		Vector3r acc_surfaceTension = Vector3r::Zero();
+
+		forall_fluid_neighbors_in_same_phase(
+			const Real massj = model->getMass(neighborIndex);
+			const Vector3r xij = xi-xj;
+
+			acc_surfaceTension += massj * (xij) * sim->W(xij);
+		);
+
+		acceleration -= (m_surfaceTensionConstant * acc_surfaceTension) * (static_cast<Real>(1.0)/massi);
 	}
 
 }

@@ -32,21 +32,33 @@ namespace SPH
 		Real m_maxErrorV;
 		unsigned int m_maxIterationsV;
 
+		// Toggle forces
+		bool m_enableCohesionForce;
+		bool m_enableDragForceOnLiq;
+		bool m_enableDragForceOnAir;
+		bool m_enableViscosity;
+		bool m_enableBouyancy;
+		bool m_enableSurfaceTension;
+
 		// BUBBLE related constants
 		const Real m_dragConstantAir = static_cast<Real>(8.0);
 		const Real m_dragConstatnLiq = static_cast<Real>(3.0);
 		const Real m_speedSound = static_cast<Real>(343.0);
-		const Real m_kmax = static_cast<Real>(6.0);
-		const Real m_minBouyancy = static_cast<Real>(14.0);
+		Real m_kmax = static_cast<Real>(6.0);
+		Real m_minBouyancy;
+		const Real m_cohesionConstant = static_cast<Real>(12.0);
+		const Real m_surfaceTensionConstant = static_cast<Real>(1.0);
 
 		//////////////////////////////////////////////////////////////////////////
 		// Forces
 		//////////////////////////////////////////////////////////////////////////
 		// Liquid forces
 		void computeViscosityForce(const unsigned int fluidModelIndex, const unsigned int index, const Real h);
+		void computeSurfaceTensionForce(const unsigned int fluidModelIndex, const Real h);
 
 		// Air force
 		void computeBouyancyForce(const unsigned int fluidModelIndex, const Real h);
+		void computeCohesionForce(const unsigned int fluidModelIndex, const Real h);
 		// -
 
 		void computeDragForce(const unsigned int fluidModelIndex, const Real h);
@@ -81,6 +93,14 @@ namespace SPH
 		static int MAX_ITERATIONS_V;
 		static int MAX_ERROR_V;
 		static int USE_DIVERGENCE_SOLVER;
+		static int USE_COHESION_FORCE;
+		static int USE_DRAG_FORCE_ON_LIQ;
+		static int USE_DRAG_FORCE_ON_AIR;
+		static int USE_VISCOSITY;
+		static int USE_BOUYANCY;
+		static int USE_SURFACE_TENSION;
+		static int MAX_K_BOUYANCY;
+		static int MIN_BOUYANCY;
 
 		TimeStepDFSPHbubble();
 		virtual ~TimeStepDFSPHbubble(void);
