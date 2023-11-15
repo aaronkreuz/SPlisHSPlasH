@@ -40,9 +40,13 @@ namespace SPH
 		bool m_enableBouyancy;
 		bool m_enableSurfaceTension;
 
+		// Forces implementations
+		enum class CohesionForce {Ihmsen, SurfaceTension};
+		int m_cohesionForce;
+
 		// BUBBLE related constants
 		const Real m_dragConstantAir = static_cast<Real>(8.0);
-		const Real m_dragConstatnLiq = static_cast<Real>(3.0);
+		const Real m_dragConstantLiq = static_cast<Real>(3.0);
 		const Real m_speedSound = static_cast<Real>(343.0);
 		Real m_kmax = static_cast<Real>(6.0);
 		Real m_minBouyancy;
@@ -62,7 +66,6 @@ namespace SPH
 		// -
 
 		void computeDragForce(const unsigned int fluidModelIndex, const Real h);
-
 
 
 		void computeDFSPHFactor(const unsigned int fluidModelIndex);
@@ -101,6 +104,10 @@ namespace SPH
 		static int USE_SURFACE_TENSION;
 		static int MAX_K_BOUYANCY;
 		static int MIN_BOUYANCY;
+		static int COHESION_FORCE_TYPE;
+
+		static int ENUM_COHESION_FORCE_IHMSEN;
+		static int ENUM_COHESION_FORCE_SURFACE_TENSION;
 
 		TimeStepDFSPHbubble();
 		virtual ~TimeStepDFSPHbubble(void);

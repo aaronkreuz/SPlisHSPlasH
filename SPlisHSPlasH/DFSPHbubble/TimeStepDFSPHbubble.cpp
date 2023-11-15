@@ -28,6 +28,10 @@ int TimeStepDFSPHbubble::USE_SURFACE_TENSION = -1;
 int TimeStepDFSPHbubble::MAX_K_BOUYANCY = -1;
 int TimeStepDFSPHbubble::MIN_BOUYANCY = -1;
 
+int TimeStepDFSPHbubble::COHESION_FORCE_TYPE = -1;
+int TimeStepDFSPHbubble::ENUM_COHESION_FORCE_IHMSEN = -1;
+int TimeStepDFSPHbubble::ENUM_COHESION_FORCE_SURFACE_TENSION = -1;
+
 
 TimeStepDFSPHbubble::TimeStepDFSPHbubble() :
 	TimeStep(),
@@ -46,7 +50,9 @@ TimeStepDFSPHbubble::TimeStepDFSPHbubble() :
 	m_enableBouyancy = true;
 	m_enableSurfaceTension = true;
 
-	m_minBouyancy = static_cast<Real>(14.0);
+	m_minBouyancy = static_cast<Real>(1.40);
+
+	m_cohesionForce = 0; //. i.e. standard cohesion force described by Ihmsen et al. in "Animation of air bubbles with SPH"
 
 	m_maxIterationsV = 100;
 	m_maxErrorV = static_cast<Real>(0.1);
@@ -123,15 +129,27 @@ void TimeStepDFSPHbubble::initParameters()
 	 setGroup(MAX_ERROR_V, "Simulation|DFSPH");
 	 setDescription(MAX_ERROR_V, "Maximal divergence error (%).");
 	 static_cast<RealParameter*>(getParameter(MAX_ERROR_V))->setMinValue(static_cast<Real>(1e-6));
-	 //
-	 // USE_DIVERGENCE_SOLVER = createBoolParameter("enableDivergenceSolver", "Enable divergence solver", &m_enableDivergenceSolver);
-	 // setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
-	 // setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
+
+	 USE_DIVERGENCE_SOLVER = createBoolParameter("enableDivergenceSolver", "Enable divergence solver", &m_enableDivergenceSolver);
+	 setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
+	 setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
 
 	 MIN_BOUYANCY = createNumericParameter("minBouyancy", "Min. bouyancy", &m_minBouyancy);
 	 setGroup(MIN_BOUYANCY, "Simulation|BUBBLE");
 	 setDescription(MIN_BOUYANCY, "Minimal bouyancy coefficient.");
 	 static_cast<RealParameter*>(getParameter(MIN_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
+
+	 MAX_K_BOUYANCY = createNumericParameter("max_KBouyancy", "Max. K Bouyancy", &m_kmax);
+	 setGroup(MAX_K_BOUYANCY, "Simulation|BUBBLE");
+	 setDescription(MAX_K_BOUYANCY, "Maximal k bouyancy coefficient.");
+	 static_cast<RealParameter*>(getParameter(MAX_K_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
+
+	 COHESION_FORCE_TYPE = createEnumParameter("cohesionForceType", "Cohesion force", &m_cohesionForce);
+	 setGroup(COHESION_FORCE_TYPE, "Simulation|BUBBLE");
+	 setDescription(COHESION_FORCE_TYPE, "Method for the cohesion force computation.");
+	 EnumParameter *enumParam = static_cast<EnumParameter*>(getParameter(COHESION_FORCE_TYPE));
+	 enumParam->addEnumValue("Ihmsen", ENUM_COHESION_FORCE_IHMSEN);
+	 enumParam->addEnumValue("SurfaceTension", ENUM_COHESION_FORCE_SURFACE_TENSION);
 }
 
 void TimeStepDFSPHbubble::step()
@@ -144,18 +162,28 @@ void TimeStepDFSPHbubble::step()
 	performNeighborhoodSearch();
 
 	// place for precomputing values to allow for avx-viscosity
-// #ifdef USE_PERFORMANCE_OPTIMIZATION
-// 	//////////////////////////////////////////////////////////////////////////
-// 	// precompute the values V_j * grad W_ij for all neighbors
-// 	//////////////////////////////////////////////////////////////////////////
-// 	START_TIMING("precomputeValues")
-// 	precomputeValues();
-// 	STOP_TIMING_AVG
-// #endif
+#ifdef USE_PERFORMANCE_OPTIMIZATION
+	//////////////////////////////////////////////////////////////////////////
+	// precompute the values V_j * grad W_ij for all neighbors
+	//////////////////////////////////////////////////////////////////////////
+	START_TIMING("precomputeValues")
+	precomputeValues();
+	STOP_TIMING_AVG
+#endif
 
 	// compute densities separately for liquid and air
 	// they don't see each other regarding densities -> coupling only via drag force!
 	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+
+		// WARNING: JUST FOR TESTING
+		// if(fm->getId() == "Liquid"){
+		// 	computeDensitiesForLiquidPhase(fluidModelIndex);
+		// }
+		// else { // Air
+		// 	computeDensitiesForSamePhase(fluidModelIndex);
+		// }
+
 		computeDensitiesForSamePhase(fluidModelIndex);
 	}
 
@@ -175,35 +203,45 @@ void TimeStepDFSPHbubble::step()
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// compute divergence source term
-	//////////////////////////////////////////////////////////////////////////
-	 for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		for (int i = 0; i < fm->numActiveParticles(); i++) {
-			computeDivergenceSourceTerm(fluidModelIndex, i, h);
-		}
-	 }
-	 //////////////////////////////////////////////////////////////////////////
-	 // Divergence-Free Solver  -> make velocity field divergence-free
-	 //////////////////////////////////////////////////////////////////////////
-	 START_TIMING("divergence-free solver");
-	 divergenceSolve();
-	 STOP_TIMING_AVG;
+	if(m_enableDivergenceSolver){
+		//////////////////////////////////////////////////////////////////////////
+		// compute divergence source term
+		//////////////////////////////////////////////////////////////////////////
+		 for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+			FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+			#pragma omp parallel default(shared)
+			{
+				#pragma omp for schedule(static)
+				for (int i = 0; i < fm->numActiveParticles(); i++) {
+					computeDivergenceSourceTerm(fluidModelIndex, i, h);
 
-	//////////////////////////////////////////////////////////////////////////
-	// update velocities using pressure accelerations to ensure that velocity field is divergence-free
-	//////////////////////////////////////////////////////////////////////////
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		const unsigned int numParticles = fm->numActiveParticles();
+					// Warm/Cold Start?
+					Real& pressureV = m_simulationData.getPressure_V(fluidModelIndex, i);
+					pressureV = 0.0;
+				}
+			}
+		 }
+		 //////////////////////////////////////////////////////////////////////////
+		 // Divergence-Free Solver  -> make velocity field divergence-free
+		 //////////////////////////////////////////////////////////////////////////
+		 START_TIMING("divergence-free solver");
+		 divergenceSolve();
+		 STOP_TIMING_AVG;
 
-		#pragma omp parallel default(shared)
-		{
-			#pragma omp for schedule(static)
-			for (int i = 0; i < numParticles; i++){
-				if (fm->getParticleState(i) == ParticleState::Active){
-					fm->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
+		//////////////////////////////////////////////////////////////////////////
+		// update velocities using pressure accelerations to ensure that velocity field is divergence-free
+		//////////////////////////////////////////////////////////////////////////
+		for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
+			FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+			const unsigned int numParticles = fm->numActiveParticles();
+
+			#pragma omp parallel default(shared)
+			{
+				#pragma omp for schedule(static)
+				for (int i = 0; i < numParticles; i++){
+					if (fm->getParticleState(i) == ParticleState::Active){
+						fm->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
+					}
 				}
 			}
 		}
@@ -264,15 +302,12 @@ void TimeStepDFSPHbubble::step()
 	 //////////////////////////////////////////////////////////////////////////
 	 // Cohesion Force -> only actiong on Air particles
 	 //////////////////////////////////////////////////////////////////////////
-	 if (m_enableCohesionForce)
-		computeCohesionForce(0, h);
-
-
-	 //////////////////////////////////////////////////////////////////////////
-	 // Currently missing forces:
-	 // AIR: -
-	 // LIQUID: surface tension
-	 //////////////////////////////////////////////////////////////////////////
+	 if (m_enableCohesionForce){
+		if(m_cohesionForce == ENUM_COHESION_FORCE_IHMSEN){
+			computeCohesionForce(0,h);
+		}
+		// else if ..
+	 }
 
 	//////////////////////////////////////////////////////////////////////////
 	// advect velocities based on non-pressure forces incl. gravity
@@ -301,13 +336,17 @@ void TimeStepDFSPHbubble::step()
 	//////////////////////////////////////////////////////////////////////////
 	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
 		FluidModel* fm = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
-		for (int i = 0; i < fm->numActiveParticles(); i++) {
-            computeConstantDensitySourceTerm(fluidModelIndex, i, h);
+		#pragma omp parallel default(shared)
+		{
+			#pragma omp for schedule(static)
+			for (int i = 0; i < fm->numActiveParticles(); i++) {
+				computeConstantDensitySourceTerm(fluidModelIndex, i, h);
 
-			// Warm/Cold Start?
-			Real& pressure = m_simulationData.getPressure(fluidModelIndex, i);
-			pressure = 0.0;
-        }
+				// Warm/Cold Start?
+				Real& pressure = m_simulationData.getPressure(fluidModelIndex, i);
+				pressure = 0.0;
+			}
+		}
 	}
 
 
@@ -392,8 +431,6 @@ void TimeStepDFSPHbubble::pressureSolve(){
 
 			density_err = 0.0;
 			for(int i = 0; i < numParticles; i++) {
-				const Real density_adv = m_simulationData.getDensityAdv(fluidModelIndex, i);
-
 				const Real sourceTerm = m_simulationData.getSourceTerm(fluidModelIndex, i);
 				Real& pressure_i = m_simulationData.getPressure(fluidModelIndex, i);
 				Real& diag_i = m_simulationData.getDiagElement(fluidModelIndex, i);
@@ -722,7 +759,8 @@ void TimeStepDFSPHbubble::computeDragForce(const unsigned int fluidModelIndex, c
 
 		Vector3r acc_drag = Vector3r::Zero();
 
-		Real dragConstant = m_dragConstantAir;
+		// drag constant of liquid is considered to be lower because influence of air onto liq might be lower than vice versa.
+		Real dragConstant = m_dragConstantLiq;
 		if (model->getId() != "Air"){
 			dragConstant = m_dragConstantAir;
 		}
@@ -815,7 +853,7 @@ void TimeStepDFSPHbubble::computeSurfaceTensionForce(const unsigned int fluidMod
 
 	for (int i = 0; i < numParticles; i++){
 		Vector3r& acceleration = model->getAcceleration(i);
-		const Real massi = model->getMass(i);
+		const Real mi = model->getMass(i);
 		const Vector3r xi = model->getPosition(i);
 
 		Vector3r acc_surfaceTension = Vector3r::Zero();
@@ -827,10 +865,11 @@ void TimeStepDFSPHbubble::computeSurfaceTensionForce(const unsigned int fluidMod
 			acc_surfaceTension += massj * (xij) * sim->W(xij);
 		);
 
-		acceleration -= (m_surfaceTensionConstant * acc_surfaceTension) * (static_cast<Real>(1.0)/massi);
+		acceleration -= (m_surfaceTensionConstant * acc_surfaceTension) * (static_cast<Real>(1.0)/mi);
 	}
-
 }
+
+
 
 
 

@@ -35,7 +35,12 @@
 			"inertiaInverse": 0.5,
 			"colorMapType": 0,
             "density0": 1000.0
-		}
+		},
+        {
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 1.4
+        }
     ],
 
     "RigidBodies": [
@@ -62,6 +67,14 @@
 			"end": [2.0, 2.0, 1.0],
 			"translation": [0.0, 0.025, 0.0],
 			"scale": [1, 1, 1]
-		}
+		},
+		{
+            "id": "Air",
+            "denseMode": 0,
+            "start": [-0.25, 0.0, -1],
+            "end": [0.25, 0.5, 1],
+            "translation": [0.025, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        }
 	]	
 }

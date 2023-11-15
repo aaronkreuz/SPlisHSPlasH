@@ -83,9 +83,9 @@ void TimeStepDFSPHjs::initParameters()
 	 setDescription(MAX_ERROR_V, "Maximal divergence error (%).");
 	 static_cast<RealParameter*>(getParameter(MAX_ERROR_V))->setMinValue(static_cast<Real>(1e-6));
 	 //
-	 // USE_DIVERGENCE_SOLVER = createBoolParameter("enableDivergenceSolver", "Enable divergence solver", &m_enableDivergenceSolver);
-	 // setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
-	 // setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
+	 USE_DIVERGENCE_SOLVER = createBoolParameter("enableDivergenceSolver", "Enable divergence solver", &m_enableDivergenceSolver);
+	 setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
+	 setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
 }
 
 void TimeStepDFSPHjs::step()
@@ -124,36 +124,47 @@ void TimeStepDFSPHjs::step()
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// compute divergence source term
-	//////////////////////////////////////////////////////////////////////////
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		for (int i = 0; i < fm->numActiveParticles(); i++) {
-			computeDivergenceSourceTerm(fluidModelIndex, i, h);
-		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Divergence-Free Solver  -> make velocity field divergence-free
-	//////////////////////////////////////////////////////////////////////////
-	START_TIMING("divergence-free solver");
-	divergenceSolve();
-	STOP_TIMING_AVG;
-
-	//////////////////////////////////////////////////////////////////////////
-	// update velocities using pressure accelerations to ensure that velocity field is divergence-free
-	//////////////////////////////////////////////////////////////////////////
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		const unsigned int numParticles = fm->numActiveParticles();
-
+	if (m_enableDivergenceSolver){
+		//////////////////////////////////////////////////////////////////////////
+		// compute divergence source term
+		//////////////////////////////////////////////////////////////////////////
 		#pragma omp parallel default(shared)
 		{
 			#pragma omp for schedule(static)
-			for (int i = 0; i < numParticles; i++){
-				if (fm->getParticleState(i) == ParticleState::Active){
-					fm->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
+			for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+				FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+				for (int i = 0; i < fm->numActiveParticles(); i++) {
+					computeDivergenceSourceTerm(fluidModelIndex, i, h);
+
+					// Warm/Cold Start?
+					Real& pressureV = m_simulationData.getPressure_V(fluidModelIndex, i);
+					pressureV = 0.0;
+				}
+			}
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Divergence-Free Solver  -> make velocity field divergence-free
+		//////////////////////////////////////////////////////////////////////////
+		START_TIMING("divergence-free solver");
+		divergenceSolve();
+		STOP_TIMING_AVG;
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// update velocities using pressure accelerations to ensure that velocity field is divergence-free
+		//////////////////////////////////////////////////////////////////////////
+		for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
+			FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+			const unsigned int numParticles = fm->numActiveParticles();
+
+			#pragma omp parallel default(shared)
+			{
+				#pragma omp for schedule(static)
+				for (int i = 0; i < numParticles; i++){
+					if (fm->getParticleState(i) == ParticleState::Active){
+						fm->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
+					}
 				}
 			}
 		}
@@ -204,13 +215,18 @@ void TimeStepDFSPHjs::step()
 	//////////////////////////////////////////////////////////////////////////
 	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++) {
 		FluidModel* fm = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
-		for (int i = 0; i < fm->numActiveParticles(); i++) {
-            computeConstantDensitySourceTerm(fluidModelIndex, i, h);
 
-			// Warm/Cold Start?
-			Real& pressure = m_simulationData.getPressure(fluidModelIndex, i);
-			pressure = 0.0;
-        }
+		#pragma omp parallel default(shared)
+		{
+			#pragma omp for schedule(static)
+			for (int i = 0; i < fm->numActiveParticles(); i++) {
+				computeConstantDensitySourceTerm(fluidModelIndex, i, h);
+
+				// Warm/Cold Start?
+				Real& pressure = m_simulationData.getPressure(fluidModelIndex, i);
+				pressure = 0.0;
+			}
+		}
 	}
 
 
@@ -339,7 +355,6 @@ void TimeStepDFSPHjs::pressureSolve(){
 			solved = solved && (avg_density_err <= (m_maxErrorV * 0.01 * density0));
 		 }
 		//////////////////////////////////////////////////////////////////////////
-		///
 		m_iterations++;
 	}
 
@@ -412,7 +427,7 @@ void TimeStepDFSPHjs::divergenceSolve()
 			}
 
 			avg_divergence_error = divergence_error / numParticles;
-			solved = solved && (avg_divergence_error <= (m_maxError * 0.01 * density0));
+			solved = solved && (avg_divergence_error <= (0.1 * 0.01 * density0));
 		}
 		m_iterationsV++;
 	}
