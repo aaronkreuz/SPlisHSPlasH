@@ -14,6 +14,7 @@
 #include "SPlisHSPlasH/DFSPHvanilla/TimeStepDFSPHvanilla.h"
 #include "SPlisHSPlasH/DFSPHjs/TimeStepDFSPHjs.h"
 #include "SPlisHSPlasH/DFSPHbubble/TimeStepDFSPHbubble.h"
+#include "SPlisHSPlasH/DFSPHbubbleOp/TimeStepDFSPHbubbleOp.h"
 #include "BoundaryModel_Akinci2012.h"
 #include "BoundaryModel_Bender2019.h"
 #include "BoundaryModel_Koschier2017.h"
@@ -63,6 +64,7 @@ int Simulation::ENUM_SIMULATION_PCISPHTEST = -1;
 int Simulation::ENUM_SIMULATION_DFSPHVANILLA = -1;
 int Simulation::ENUM_SIMULATION_DFSPHJS = -1;
 int Simulation::ENUM_SIMULATION_DFSPHBUBBLE = -1;
+int Simulation::ENUM_SIMULATION_DFSPHBUBBLEOP = -1;
 int Simulation::BOUNDARY_HANDLING_METHOD = -1;
 int Simulation::ENUM_AKINCI2012 = -1;
 int Simulation::ENUM_KOSCHIER2017 = -1;
@@ -269,6 +271,7 @@ void Simulation::initParameters()
 	enumParam->addEnumValue("DFSPHvanilla", ENUM_SIMULATION_DFSPHVANILLA);
 	enumParam->addEnumValue("DFSPHjs", ENUM_SIMULATION_DFSPHJS);
 	enumParam->addEnumValue("DFSPHbubble", ENUM_SIMULATION_DFSPHBUBBLE);
+	enumParam->addEnumValue("DFSPHbubbleOp", ENUM_SIMULATION_DFSPHBUBBLEOP);
 
 	BOUNDARY_HANDLING_METHOD = createEnumParameter("boundaryHandlingMethod", "Boundary handling method", &m_boundaryHandlingMethod);
 	setGroup(BOUNDARY_HANDLING_METHOD, "Simulation|Simulation");
@@ -632,6 +635,14 @@ void Simulation::setSimulationMethod(const int val)
 	{
 		std::cout << "DFSPHbubble init time-step" << std::endl;
 		m_timeStep = new TimeStepDFSPHbubble();
+		m_timeStep->init();
+		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_PRECOMPUTED_CUBIC);
+		setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_PRECOMPUTED_CUBIC);
+	}
+	else if (method == SimulationMethods::DFSPHbubbleOp)
+	{
+		std::cout << "DFSPHbubbleOp init time-step" << std::endl;
+		m_timeStep = new TimeStepDFSPHbubbleOp();
 		m_timeStep->init();
 		setValue(Simulation::KERNEL_METHOD, Simulation::ENUM_KERNEL_PRECOMPUTED_CUBIC);
 		setValue(Simulation::GRAD_KERNEL_METHOD, Simulation::ENUM_GRADKERNEL_PRECOMPUTED_CUBIC);

@@ -1,5 +1,7 @@
 #include "Simulation.h"
 
+#include "SPlisHSPlasH/Cohesion/BubbleIhmsenCohesion.h"
+
 #include "SPlisHSPlasH/Drag/DragForce_Macklin2014.h"
 #include "SPlisHSPlasH/Drag/DragForce_Gissler2017.h"
 
@@ -29,6 +31,9 @@ using namespace SPH;
 
 void Simulation::registerNonpressureForces()
 {
+	addCohesionMethod("None", [](FluidModel*) -> NonPressureForceBase* { return nullptr; });
+	addCohesionMethod("Ihmsen et al. 2011", BubbleIhmsenCohesion::creator);
+
 	addDragMethod("None", [](FluidModel*) -> NonPressureForceBase* { return nullptr; });
 	addDragMethod("Macklin et al. 2014", DragForce_Macklin2014::creator);
 	addDragMethod("Gissler et al. 2017", DragForce_Gissler2017::creator);

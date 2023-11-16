@@ -182,7 +182,7 @@ for (unsigned int pid = 0; pid < nBoundaries; pid++) \
 
 namespace SPH
 {
-	enum class SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, ICSPH, PCISPHtest, DFSPHvanilla, DFSPHjs, DFSPHbubble, NumSimulationMethods};
+	enum class SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, ICSPH, PCISPHtest, DFSPHvanilla, DFSPHjs, DFSPHbubble, DFSPHbubbleOp, NumSimulationMethods};
 	enum class BoundaryHandlingMethods { Akinci2012 = 0, Koschier2017, Bender2019, NumSimulationMethods };
 
 	/** \brief Class to manage the current simulation time and the time step size. 
@@ -234,6 +234,7 @@ namespace SPH
 		static int ENUM_SIMULATION_DFSPHVANILLA;
 		static int ENUM_SIMULATION_DFSPHJS;
 		static int ENUM_SIMULATION_DFSPHBUBBLE;
+		static int ENUM_SIMULATION_DFSPHBUBBLEOP;
 
 		static int BOUNDARY_HANDLING_METHOD;
 		static int ENUM_AKINCI2012;
@@ -327,6 +328,7 @@ namespace SPH
 		int m_boundaryHandlingMethod;
 		std::string m_cachePath;
 		bool m_useCache;
+		std::vector<NonPressureForceMethod> m_cohesionMethods;
 		std::vector<NonPressureForceMethod> m_dragMethods;
 		std::vector<NonPressureForceMethod> m_elasticityMethods;
 		std::vector<NonPressureForceMethod> m_surfaceTensionMethods;
@@ -441,6 +443,9 @@ namespace SPH
 
 		void saveState(BinaryFileWriter &binWriter);
 		void loadState(BinaryFileReader &binReader);
+
+		void addCohesionMethod(const std::string& name, const std::function<NonPressureForceBase* (FluidModel*)>& creator) { m_cohesionMethods.push_back({ name, creator, -1 }); }
+		std::vector<NonPressureForceMethod>& getCohesionMethods() { return m_cohesionMethods; }
 
 		void addDragMethod(const std::string& name, const std::function<NonPressureForceBase* (FluidModel*)>& creator) { m_dragMethods.push_back({ name, creator, -1 }); }
 		std::vector<NonPressureForceMethod>& getDragMethods() { return m_dragMethods; }
