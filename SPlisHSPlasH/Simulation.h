@@ -328,7 +328,7 @@ namespace SPH
 		int m_boundaryHandlingMethod;
 		std::string m_cachePath;
 		bool m_useCache;
-		std::vector<NonPressureForceMethod> m_cohesionMethods;
+		std::vector<NonPressureForceMethod> m_bubbleMethods;
 		std::vector<NonPressureForceMethod> m_dragMethods;
 		std::vector<NonPressureForceMethod> m_elasticityMethods;
 		std::vector<NonPressureForceMethod> m_surfaceTensionMethods;
@@ -444,8 +444,8 @@ namespace SPH
 		void saveState(BinaryFileWriter &binWriter);
 		void loadState(BinaryFileReader &binReader);
 
-		void addCohesionMethod(const std::string& name, const std::function<NonPressureForceBase* (FluidModel*)>& creator) { m_cohesionMethods.push_back({ name, creator, -1 }); }
-		std::vector<NonPressureForceMethod>& getCohesionMethods() { return m_cohesionMethods; }
+		void addBubbleMethod(const std::string& name, const std::function<NonPressureForceBase* (FluidModel*)>& creator) { m_bubbleMethods.push_back({ name, creator, -1 }); }
+		std::vector<NonPressureForceMethod>& getBubbleMethods() { return m_bubbleMethods; }
 
 		void addDragMethod(const std::string& name, const std::function<NonPressureForceBase* (FluidModel*)>& creator) { m_dragMethods.push_back({ name, creator, -1 }); }
 		std::vector<NonPressureForceMethod>& getDragMethods() { return m_dragMethods; }

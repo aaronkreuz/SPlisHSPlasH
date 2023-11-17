@@ -12,6 +12,7 @@
 #include "Vorticity/VorticityBase.h"
 #include "Drag/DragBase.h"
 #include "Elasticity/ElasticityBase.h"
+#include "Bubble/BubbleBase.h"
 #include "XSPH.h"
 
 
@@ -26,6 +27,7 @@ int FluidModel::SURFACE_TENSION_METHOD = -1;
 int FluidModel::VISCOSITY_METHOD = -1;
 int FluidModel::VORTICITY_METHOD = -1;
 int FluidModel::ELASTICITY_METHOD = -1;
+int FluidModel::BUBBLE_METHOD = -1;
 
 
 FluidModel::FluidModel() :
@@ -60,6 +62,9 @@ FluidModel::FluidModel() :
 	m_elasticityMethod = 0;
 	m_elasticity = nullptr;
 	m_elasticityMethodChanged = nullptr;
+	m_bubbleMethod = 0;
+	m_bubble = nullptr;
+	m_bubbleMethodChanged = nullptr;
 	m_xsph = nullptr;
 
 	addField({ "id", FieldType::UInt, [&](const unsigned int i) -> unsigned int* { return &getParticleId(i); }, true });
@@ -88,6 +93,7 @@ FluidModel::~FluidModel(void)
 	delete m_vorticity;
 	delete m_viscosity;
 	delete m_elasticity;
+	delete m_bubble;
 
 	releaseFluidParticles();
 }
@@ -116,6 +122,8 @@ void FluidModel::deferredInit()
 		m_drag->deferredInit();
 	if (m_elasticity)
 		m_elasticity->deferredInit();
+	if (m_bubble)
+		m_bubble->deferredInit();
 }
 
 
@@ -243,6 +251,8 @@ void FluidModel::reset()
 		m_drag->reset();
 	if (m_elasticity)
 		m_elasticity->reset();
+	if (m_bubble)
+		m_bubble->reset();
 	if (m_xsph)
 		m_xsph->reset();
 
@@ -373,6 +383,8 @@ void FluidModel::performNeighborhoodSearchSort()
 		m_drag->performNeighborhoodSearchSort();
 	if (m_elasticity)
 		m_elasticity->performNeighborhoodSearchSort();
+	if (m_bubble)
+		m_bubble->performNeighborhoodSearchSort();
 	if (m_xsph)
 		m_xsph->performNeighborhoodSearchSort();
 }
@@ -432,6 +444,11 @@ void FluidModel::setElasticityMethodChangedCallback(std::function<void()> const&
 	m_elasticityMethodChanged = callBackFct;
 }
 
+void FluidModel::setBubbleMethodChangedCallback(std::function<void()> const& callBackFct)
+{
+	m_elasticityMethodChanged = callBackFct;
+}
+
 void FluidModel::computeSurfaceTension()
 {
 	if (m_surfaceTension)
@@ -462,6 +479,12 @@ void FluidModel::computeElasticity()
 		m_elasticity->step();
 }
 
+void FluidModel::computeBubbleForces()
+{
+	if (m_bubble)
+		m_bubble->step();
+}
+
 void FluidModel::computeXSPH()
 {
 	if (m_xsph)
@@ -480,8 +503,55 @@ void FluidModel::emittedParticles(const unsigned int startIndex)
 		m_drag->emittedParticles(startIndex);
 	if (m_elasticity)
 		m_elasticity->emittedParticles(startIndex);
+	if (m_bubble)
+		m_bubble->emittedParticles(startIndex);
 	if (m_xsph)
 		m_xsph->emittedParticles(startIndex);
+}
+
+void FluidModel::setBubbleMethod(const std::string& val){
+	Simulation* sim = Simulation::getCurrent();
+	std::vector<Simulation::NonPressureForceMethod>& methods = sim->getBubbleMethods();
+	for (size_t i = 0; i < methods.size(); i++)
+	{
+		if (methods[i].m_name == val)
+		{
+			setBubbleMethod(static_cast<unsigned int>(i));
+			break;
+		}
+	}
+}
+
+void FluidModel::setBubbleMethod(const unsigned int val)
+{
+	Simulation* sim = Simulation::getCurrent();
+	std::vector<Simulation::NonPressureForceMethod>& stMethods = sim->getBubbleMethods();
+
+	unsigned int stm = val;
+	if (stm >= stMethods.size())
+		stm = 0;
+
+	if (stm == m_bubbleMethod)
+		return;
+
+	delete m_bubble;
+	m_bubble = nullptr;
+
+	m_bubbleMethod = stm;
+	for (unsigned int i = 0; i < stMethods.size(); i++)
+	{
+		if (stMethods[i].m_id == m_bubbleMethod)
+		{
+			m_bubble = static_cast<BubbleBase*>(stMethods[i].m_creator(this));
+			break;
+		}
+	}
+
+	if (m_bubble != nullptr)
+		m_bubble->init();
+
+	if (m_bubbleMethodChanged != nullptr)
+		m_bubbleMethodChanged();
 }
 
 void FluidModel::setSurfaceTensionMethod(const std::string& val)
@@ -742,6 +812,8 @@ void SPH::FluidModel::saveState(BinaryFileWriter &binWriter)
 		m_drag->saveState(binWriter);
 	if (m_elasticity)
 		m_elasticity->saveState(binWriter);
+	if (m_bubble)
+		m_bubble->saveState(binWriter);
 	if (m_xsph)
 		m_xsph->saveState(binWriter);
 	m_emitterSystem->saveState(binWriter);
@@ -766,6 +838,8 @@ void SPH::FluidModel::loadState(BinaryFileReader &binReader)
 		m_drag->loadState(binReader);
 	if (m_elasticity)
 		m_elasticity->loadState(binReader);
+	if (m_bubble)
+		m_bubble->loadState(binReader);
 	if (m_xsph)
 		m_xsph->loadState(binReader);
 

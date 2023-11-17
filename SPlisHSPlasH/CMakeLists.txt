@@ -114,12 +114,14 @@ set(DFSPH_BUBBLE_SOURCE_FILES
 	DFSPHbubble/SimulationDataDFSPHbubble.cpp
 	DFSPHbubble/TimeStepDFSPHbubble.cpp)
 
-set(COHESION_HEADER_FILES
-	Cohesion/BubbleIhmsenCohesion.h
+set(BUBBLE_HEADER_FILES
+	Bubble/BubbleBase.h
+	Bubble/BubbleStandard.h
     )
 
-set(COHESION_SOURCE_FILES
-	Cohesion/BubbleIhmsenCohesion.cpp
+set(BUBBLE_SOURCE_FILES
+	Bubble/BubbleBase.cpp
+	Bubble/BubbleStandard.cpp
     )
 
 set(SURFACETENSION_HEADER_FILES
@@ -322,8 +324,8 @@ add_library(SPlisHSPlasH
 	${DFSPH_BUBBLE_HEADER_FILES}
 	${DFSPH_BUBBLE_SOURCE_FILES}
 
-	${COHESION_HEADER_FILES}
-	${COHESION_SOURCE_FILES}
+	${BUBBLE_HEADER_FILES}
+	${BUBBLE_SOURCE_FILES}
 	
 	${VISCOSITY_HEADER_FILES}
 	${VISCOSITY_SOURCE_FILES}
@@ -391,6 +393,8 @@ source_group("Header Files\\DFSPHjs" FILES ${DFSPH_JS_HEADER_FILES})
 source_group("Source Files\\DFSPHjs" FILES ${DFSPH_JS_SOURCE_FILES})
 source_group("Header Files\\DFSPHbubble" FILES ${DFSPH_BUBBLE_HEADER_FILES})
 source_group("Source Files\\DFSPHbubble" FILES ${DFSPH_BUBBLE_SOURCE_FILES})
+source_group("Header Files\\Bubble" FILES ${BUBBLE_HEADER_FILES})
+source_group("Source Files\\Bubble" FILES ${BUBBLE_SOURCE_FILES})
 source_group("Header Files\\Viscosity" FILES ${VISCOSITY_HEADER_FILES})
 source_group("Source Files\\Viscosity" FILES ${VISCOSITY_SOURCE_FILES})
 source_group("Header Files\\SurfaceTension" FILES ${SURFACETENSION_HEADER_FILES})

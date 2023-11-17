@@ -54,6 +54,7 @@ namespace SPH
 	class VorticityBase;
 	class DragBase;
 	class ElasticityBase;
+	class BubbleBase;
 	class XSPH;
 	class EmitterSystem;
 
@@ -87,6 +88,7 @@ namespace SPH
 			static int VISCOSITY_METHOD;
 			static int VORTICITY_METHOD;
 			static int ELASTICITY_METHOD;
+			static int BUBBLE_METHOD;
 
 			FluidModel();
 			FluidModel(const FluidModel&) = delete;
@@ -139,6 +141,8 @@ namespace SPH
 			DragBase *m_drag;
 			unsigned int m_elasticityMethod;
 			ElasticityBase *m_elasticity;
+			unsigned int m_bubbleMethod;
+			BubbleBase *m_bubble;
 			std::vector<FieldDescription> m_fields;
 
 			std::function<void()> m_dragMethodChanged;
@@ -146,6 +150,7 @@ namespace SPH
 			std::function<void()> m_viscosityMethodChanged;
 			std::function<void()> m_vorticityMethodChanged;
 			std::function<void()> m_elasticityMethodChanged;
+			std::function<void()> m_bubbleMethodChanged;
 
 			Real m_density0;
 			unsigned int m_pointSetIndex;
@@ -213,12 +218,16 @@ namespace SPH
 			unsigned int getElasticityMethod() const { return m_elasticityMethod; }
 			void setElasticityMethod(const std::string& val);
 			void setElasticityMethod(const unsigned int val);
+			unsigned int getBubbleMethod() const {return m_bubbleMethod; }
+			void setBubbleMethod(const std::string& val);
+			void setBubbleMethod(const unsigned int val);
 
 			SurfaceTensionBase *getSurfaceTensionBase() { return m_surfaceTension; }
 			ViscosityBase *getViscosityBase() { return m_viscosity; }
 			VorticityBase *getVorticityBase() { return m_vorticity; }
 			DragBase *getDragBase() { return m_drag; }
 			ElasticityBase *getElasticityBase() { return m_elasticity; }
+			BubbleBase *getBubbleBase() { return m_bubble; }
 			XSPH* getXSPH() { return m_xsph; }
 
 			void setDragMethodChangedCallback(std::function<void()> const& callBackFct);
@@ -226,12 +235,14 @@ namespace SPH
 			void setViscosityMethodChangedCallback(std::function<void()> const& callBackFct);
 			void setVorticityMethodChangedCallback(std::function<void()> const& callBackFct);
 			void setElasticityMethodChangedCallback(std::function<void()> const& callBackFct);
+			void setBubbleMethodChangedCallback(std::function<void()> const& callBackFct);
 
 			void computeSurfaceTension();
 			void computeViscosity();
 			void computeVorticity();
 			void computeDragForce();
 			void computeElasticity();
+			void computeBubbleForces();
 			void computeXSPH();
 
 			void saveState(BinaryFileWriter &binWriter);

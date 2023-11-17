@@ -108,6 +108,23 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	enumParam->addEnumValue("None", ENUM_COHESION_FORCE_NONE);
 	enumParam->addEnumValue("Ihmsen", ENUM_COHESION_FORCE_IHMSEN);
 	enumParam->addEnumValue("SurfaceTension", ENUM_COHESION_FORCE_SURFACE_TENSION);
+
+	Simulation* sim = Simulation::getCurrent();
+	const unsigned int nFluids = sim->numberOfFluidModels();
+
+	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
+		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+
+		ParameterBase::GetFunc<int> getBubbleFct = std::bind(&FluidModel::getBubbleMethod, fm);
+		ParameterBase::SetFunc<int> setBubbleFct = std::bind(static_cast<void (FluidModel::*)(const unsigned int)>(&FluidModel::setBubbleMethod), fm, std::placeholders::_1);
+		FluidModel::BUBBLE_METHOD = createEnumParameter("bubbleMethod", "Bubble " + fm->getId(), getBubbleFct, setBubbleFct);
+		setGroup(FluidModel::BUBBLE_METHOD, "BUBBLE|Bubble Forces");
+		setDescription(FluidModel::BUBBLE_METHOD, "Method to compute Bubble-framework forces.");
+		enumParam = static_cast<EnumParameter*>(getParameter(FluidModel::BUBBLE_METHOD));
+		std::vector<Simulation::NonPressureForceMethod>& bubbleMethods = Simulation::getCurrent()->getBubbleMethods();
+		for (unsigned int i = 0; i < bubbleMethods.size(); i++)
+			enumParam->addEnumValue(bubbleMethods[i].m_name, bubbleMethods[i].m_id);
+	}
 }
 
 void TimeStepDFSPHbubbleOp::step()
@@ -179,6 +196,13 @@ void TimeStepDFSPHbubbleOp::step()
 	// sim->computeNonPressureForces();
 	// INFO: stored in acceleration array of fluid-model
 	// note that neighbors and densities are already determined at this point
+
+	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
+		// compute the forces for the air-bubble simulation. Ihmsen et al. 2011
+		// i.e. drag, bouyancy, cohesion
+		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+		fm->computeBubbleForces();
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Viscosity XSPH
