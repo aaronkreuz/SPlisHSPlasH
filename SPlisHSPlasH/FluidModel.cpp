@@ -201,7 +201,15 @@ void FluidModel::initParameters()
 	for (unsigned int i = 0; i < vorticityMethods.size(); i++)
 		enumParam->addEnumValue(vorticityMethods[i].m_name, vorticityMethods[i].m_id);
 
-
+	ParameterBase::GetFunc<int> getBubbleFct = std::bind(&FluidModel::getBubbleMethod, this);
+	ParameterBase::SetFunc<int> setBubbleFct = std::bind(static_cast<void (FluidModel::*)(const unsigned int)>(&FluidModel::setBubbleMethod), this, std::placeholders::_1);
+	BUBBLE_METHOD = createEnumParameter("bubbleMethod", "Bubble forces", getBubbleFct, setBubbleFct);
+	setGroup(FluidModel::BUBBLE_METHOD, "Fluid Model|Bubble Forces");
+	setDescription(BUBBLE_METHOD, "Method to compute Bubble-framework forces.");
+	enumParam = static_cast<EnumParameter*>(getParameter(BUBBLE_METHOD));
+	std::vector<Simulation::NonPressureForceMethod>& bubbleMethods = Simulation::getCurrent()->getBubbleMethods();
+	for (unsigned int i = 0; i < bubbleMethods.size(); i++)
+		enumParam->addEnumValue(bubbleMethods[i].m_name, bubbleMethods[i].m_id);
 }
 
 
@@ -446,7 +454,7 @@ void FluidModel::setElasticityMethodChangedCallback(std::function<void()> const&
 
 void FluidModel::setBubbleMethodChangedCallback(std::function<void()> const& callBackFct)
 {
-	m_elasticityMethodChanged = callBackFct;
+	m_bubbleMethodChanged = callBackFct;
 }
 
 void FluidModel::computeSurfaceTension()

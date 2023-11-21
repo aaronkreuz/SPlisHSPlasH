@@ -116,12 +116,12 @@ set(DFSPH_BUBBLE_SOURCE_FILES
 
 set(BUBBLE_HEADER_FILES
 	Bubble/BubbleBase.h
-	Bubble/BubbleStandard.h
+	Bubble/BubbleIhmsen.h
     )
 
 set(BUBBLE_SOURCE_FILES
 	Bubble/BubbleBase.cpp
-	Bubble/BubbleStandard.cpp
+	Bubble/BubbleIhmsen.cpp
     )
 
 set(SURFACETENSION_HEADER_FILES

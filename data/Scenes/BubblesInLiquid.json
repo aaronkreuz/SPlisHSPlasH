@@ -6,7 +6,7 @@
         "particleRadius": 0.025,
         "colorMapType": 1,
         "numberOfStepsPerRenderUpdate": 4,
-        "simulationMethod": 10,
+        "simulationMethod": 11,
         "gravitation" : [0.0, -9.81, 0.0],
         "cflMethod": 1,
         "cflFactor": 1,
@@ -34,12 +34,15 @@
 			"viscosityOmega": 0.05,
 			"inertiaInverse": 0.5,
 			"colorMapType": 0,
-            "density0": 1000.0
+            "density0": 1000.0,
+            "bubbleMethod": 1
 		},
         {
             "id": "Air",
             "colorMapType": 0,
-            "density0": 1.4
+            "density0": 1.4,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1
         }
     ],
 

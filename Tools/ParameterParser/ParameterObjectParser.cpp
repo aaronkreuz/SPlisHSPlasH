@@ -7,6 +7,7 @@
 #include "SPlisHSPlasH/SurfaceTension/SurfaceTensionBase.h"
 #include "SPlisHSPlasH/Vorticity/VorticityBase.h"
 #include "SPlisHSPlasH/Elasticity/ElasticityBase.h"
+#include "SPlisHSPlasH/Bubble/BubbleBase.h"
 #include "SPlisHSPlasH/XSPH.h"
 #include <vector>
 
@@ -96,6 +97,14 @@ void ParameterObjectParser::parseParameters()
 	{
 		fluidModel->setElasticityMethod(i);
 		parseParameterObject(fluidModel->getElasticityBase());
+	}
+
+	// Bubble forces
+	auto& bubbleMethods = sim->getBubbleMethods();
+	for (unsigned int i = 0; i < bubbleMethods.size(); i++) 
+	{
+		fluidModel->setBubbleMethod(i);
+		parseParameterObject(fluidModel->getBubbleBase());
 	}
 
 	// cleanup

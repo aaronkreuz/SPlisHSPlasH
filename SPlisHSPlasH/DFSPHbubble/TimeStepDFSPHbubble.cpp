@@ -134,22 +134,15 @@ void TimeStepDFSPHbubble::initParameters()
 	 setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
 	 setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
 
-	 MIN_BOUYANCY = createNumericParameter("minBouyancy", "Min. bouyancy", &m_minBouyancy);
-	 setGroup(MIN_BOUYANCY, "Simulation|BUBBLE");
-	 setDescription(MIN_BOUYANCY, "Minimal bouyancy coefficient.");
-	 static_cast<RealParameter*>(getParameter(MIN_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
-
-	 MAX_K_BOUYANCY = createNumericParameter("max_KBouyancy", "Max. K Bouyancy", &m_kmax);
-	 setGroup(MAX_K_BOUYANCY, "Simulation|BUBBLE");
-	 setDescription(MAX_K_BOUYANCY, "Maximal k bouyancy coefficient.");
-	 static_cast<RealParameter*>(getParameter(MAX_K_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
-
-	 COHESION_FORCE_TYPE = createEnumParameter("cohesionForceType", "Cohesion force", &m_cohesionForce);
-	 setGroup(COHESION_FORCE_TYPE, "Simulation|BUBBLE");
-	 setDescription(COHESION_FORCE_TYPE, "Method for the cohesion force computation.");
-	 EnumParameter *enumParam = static_cast<EnumParameter*>(getParameter(COHESION_FORCE_TYPE));
-	 enumParam->addEnumValue("Ihmsen", ENUM_COHESION_FORCE_IHMSEN);
-	 enumParam->addEnumValue("SurfaceTension", ENUM_COHESION_FORCE_SURFACE_TENSION);
+	 // MIN_BOUYANCY = createNumericParameter("minBouyancy", "Min. bouyancy", &m_minBouyancy);
+	 // setGroup(MIN_BOUYANCY, "Simulation|BUBBLE");
+	 // setDescription(MIN_BOUYANCY, "Minimal bouyancy coefficient.");
+	 // static_cast<RealParameter*>(getParameter(MIN_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
+//
+	 // MAX_K_BOUYANCY = createNumericParameter("max_KBouyancy", "Max. K Bouyancy", &m_kmax);
+	 // setGroup(MAX_K_BOUYANCY, "Simulation|BUBBLE");
+	 // setDescription(MAX_K_BOUYANCY, "Maximal k bouyancy coefficient.");
+	 // static_cast<RealParameter*>(getParameter(MAX_K_BOUYANCY))->setMinValue(static_cast<Real>(1.0));
 }
 
 void TimeStepDFSPHbubble::step()

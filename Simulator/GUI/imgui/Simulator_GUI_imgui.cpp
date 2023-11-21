@@ -497,6 +497,7 @@ void Simulator_GUI_imgui::initSimulationParameterGUI()
 		imguiParameters::createParameterObjectGUI((GenParam::ParameterObject*) model->getViscosityBase());
 		imguiParameters::createParameterObjectGUI((GenParam::ParameterObject*) model->getVorticityBase());
 		imguiParameters::createParameterObjectGUI((GenParam::ParameterObject*) model->getElasticityBase());
+		imguiParameters::createParameterObjectGUI((GenParam::ParameterObject*) model->getBubbleBase());
 	}
 	
 	initImguiParameters();

@@ -1,6 +1,6 @@
 #include "Simulation.h"
 
-#include "SPlisHSPlasH/Bubble/BubbleStandard.h"
+#include "SPlisHSPlasH/Bubble/BubbleIhmsen.h"
 
 #include "SPlisHSPlasH/Drag/DragForce_Macklin2014.h"
 #include "SPlisHSPlasH/Drag/DragForce_Gissler2017.h"
@@ -32,7 +32,7 @@ using namespace SPH;
 void Simulation::registerNonpressureForces()
 {
 	addBubbleMethod("None", [](FluidModel*) -> NonPressureForceBase* { return nullptr; });
-	addBubbleMethod("Bubble Ihmsen et al. 2011", BubbleStandard::creator);
+	addBubbleMethod("Bubble Ihmsen et al. 2011", BubbleIhmsen::creator);
 
 	addDragMethod("None", [](FluidModel*) -> NonPressureForceBase* { return nullptr; });
 	addDragMethod("Macklin et al. 2014", DragForce_Macklin2014::creator);

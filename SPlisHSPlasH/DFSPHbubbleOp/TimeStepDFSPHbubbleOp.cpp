@@ -92,45 +92,12 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	USE_DIVERGENCE_SOLVER = createBoolParameter("enableDivergenceSolver", "Enable divergence solver", &m_enableDivergenceSolver);
 	setGroup(USE_DIVERGENCE_SOLVER, "Simulation|DFSPH");
 	setDescription(USE_DIVERGENCE_SOLVER, "Turn divergence solver on/off.");
-
-	DRAG_COEFFICIENT_AIR = createNumericParameter("dragCoeffientAir", "Drag Coefficient Air", &m_dragConstantAir);
-	setGroup(DRAG_COEFFICIENT_AIR, "Simulation|BUBBLE");
-	setDescription(DRAG_COEFFICIENT_AIR, "Drag coefficient on Air particles.");
-
-	DRAG_COEFFICIENT_LIQ = createNumericParameter("dragCoeffientLiq", "Drag Coefficient Liquid", &m_dragConstantLiq);
-	setGroup(DRAG_COEFFICIENT_LIQ, "Simulation|BUBBLE");
-	setDescription(DRAG_COEFFICIENT_LIQ, "Drag coefficient on Liquid particles.");
-
-	COHESION_FORCE_TYPE = createEnumParameter("cohesionForceType", "Cohesion force", &m_cohesionForce);
-	setGroup(COHESION_FORCE_TYPE, "Simulation|BUBBLE");
-	setDescription(COHESION_FORCE_TYPE, "Method for the cohesion force computation.");
-	EnumParameter *enumParam = static_cast<EnumParameter*>(getParameter(COHESION_FORCE_TYPE));
-	enumParam->addEnumValue("None", ENUM_COHESION_FORCE_NONE);
-	enumParam->addEnumValue("Ihmsen", ENUM_COHESION_FORCE_IHMSEN);
-	enumParam->addEnumValue("SurfaceTension", ENUM_COHESION_FORCE_SURFACE_TENSION);
-
-	Simulation* sim = Simulation::getCurrent();
-	const unsigned int nFluids = sim->numberOfFluidModels();
-
-	for (int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-
-		ParameterBase::GetFunc<int> getBubbleFct = std::bind(&FluidModel::getBubbleMethod, fm);
-		ParameterBase::SetFunc<int> setBubbleFct = std::bind(static_cast<void (FluidModel::*)(const unsigned int)>(&FluidModel::setBubbleMethod), fm, std::placeholders::_1);
-		FluidModel::BUBBLE_METHOD = createEnumParameter("bubbleMethod", "Bubble " + fm->getId(), getBubbleFct, setBubbleFct);
-		setGroup(FluidModel::BUBBLE_METHOD, "BUBBLE|Bubble Forces");
-		setDescription(FluidModel::BUBBLE_METHOD, "Method to compute Bubble-framework forces.");
-		enumParam = static_cast<EnumParameter*>(getParameter(FluidModel::BUBBLE_METHOD));
-		std::vector<Simulation::NonPressureForceMethod>& bubbleMethods = Simulation::getCurrent()->getBubbleMethods();
-		for (unsigned int i = 0; i < bubbleMethods.size(); i++)
-			enumParam->addEnumValue(bubbleMethods[i].m_name, bubbleMethods[i].m_id);
-	}
 }
 
 void TimeStepDFSPHbubbleOp::step()
 {
 	Simulation *sim = Simulation::getCurrent();
-	TimeManager *tm = TimeManager::getCurrent ();
+	TimeManager *tm = TimeManager::getCurrent();
 	const Real h = tm->getTimeStepSize();
 	const unsigned int nModels = sim->numberOfFluidModels();
 
@@ -226,22 +193,12 @@ void TimeStepDFSPHbubbleOp::step()
 	computeSurfaceTensionForce(1, h);
 
 	//////////////////////////////////////////////////////////////////////////
-	// Drag Forces -> Two Way Coupling
+	// Non-pressure Forces introduced by Bubble-paper
 	//////////////////////////////////////////////////////////////////////////
-	// Force acting on Air particles
-	computeDragForce(0, h);
-	// Force acting on Liquid particles
-	computeDragForce(1, h);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Buoyancy Force -> only acting on Air particles
-	//////////////////////////////////////////////////////////////////////////
-	computeBouyancyForce(0, h);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Cohesion Force -> only actiong on Air particles
-	//////////////////////////////////////////////////////////////////////////
-	computeCohesionForce(0,h);
+	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
+		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+		fm->computeBubbleForces();
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Update the time step size, e.g. by using a CFL condition
