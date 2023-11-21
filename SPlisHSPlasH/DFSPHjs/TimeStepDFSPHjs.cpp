@@ -248,7 +248,7 @@ void TimeStepDFSPHjs::step()
 		#pragma omp parallel default(shared)
 		{
 			#pragma omp for schedule(static)
-			for (unsigned int i = 0; i < numParticles; i++) {
+			for (int i = 0; i < numParticles; i++) {
 				if (model->getParticleState(i) == ParticleState::Active)
 				{
 					Vector3r& xi = model->getPosition(i);

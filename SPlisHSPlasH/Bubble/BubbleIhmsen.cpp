@@ -10,6 +10,7 @@ int BubbleIhmsen::ENUM_COHESION_FORCE_NONE = -1;
 int BubbleIhmsen::ENUM_COHESION_FORCE_IHMSEN = -1;
 int BubbleIhmsen::ENUM_COHESION_FORCE_SURFACE_TENSION = -1;
 int BubbleIhmsen::ENUM_COHESION_FORCE_IHMSEN_KERNEL = -1;
+int BubbleIhmsen::ENUM_COHESION_FORCE_AKINCI2013 = -1;
 
 int BubbleIhmsen::BUOYANCY_FORCE = -1;
 int BubbleIhmsen::ENUM_BUOYANCY_FORCE_NONE = -1;
@@ -28,7 +29,7 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	BubbleBase(model)
 {
 	m_normals.resize(model->numParticles(), Vector3r::Zero());
-	model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
+	// model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
 
 	if(model->getId() == "Air"){
 		m_cohesionForce = 1;
@@ -42,12 +43,11 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 		m_dragForceLiq = 1;
 		m_dragForceAir = 0;
 	}
-
 }
 
 BubbleIhmsen::~BubbleIhmsen(void)
 {
-	m_model->removeFieldByName("normal");
+	// m_model->removeFieldByName("normal");
 	m_normals.clear();
 }
 
@@ -64,6 +64,7 @@ void BubbleIhmsen::initParameters()
 		enumParam->addEnumValue("Ihmsen", ENUM_COHESION_FORCE_IHMSEN);
 		enumParam->addEnumValue("Surface Tension", ENUM_COHESION_FORCE_SURFACE_TENSION);
 		enumParam->addEnumValue("Ihmsen Kernel", ENUM_COHESION_FORCE_IHMSEN_KERNEL);
+		enumParam->addEnumValue("Akinci 2013", ENUM_COHESION_FORCE_AKINCI2013);
 
 		BUOYANCY_FORCE = createEnumParameter("buoyancyForceType", "Buoyancy force", &m_buoyancyForce);
 		setGroup(BUOYANCY_FORCE, "Fluid Model|Bubble Forces");
@@ -117,6 +118,10 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	else if(m_cohesionForce == ENUM_COHESION_FORCE_IHMSEN_KERNEL)
 	{
 		computeCohesionIhmsenKernel(model);
+	}
+	else if (m_cohesionForce == ENUM_COHESION_FORCE_AKINCI2013) 
+	{
+		computeCohesionAkinci2013(model);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -178,13 +183,13 @@ void BubbleIhmsen::computeCohesionIhmsenKernel(FluidModel* model){
 	 }
 }
 
+// See: "Versatile surface tension and adhesion for SPH fluids" Akinci et al. 2013
 void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
-	// CohesionKernel::W();
 	Simulation* sim = Simulation::getCurrent();
-	unsigned int fluidModelIndex = m_model->getPointSetIndex();
+	unsigned int fluidModelIndex = model->getPointSetIndex();
 	const Real supportRadius = sim->getSupportRadius();
 	const unsigned int numParticles = model->numActiveParticles();
-	const Real density0 = m_model->getDensity0();
+	const Real density0 = model->getDensity0();
 
 	computeNormals();
 
@@ -212,7 +217,6 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 	}
 
 	// Should I consider the boundary here?
-
 }
 
 // Standard method used in BUBBLE-paper
@@ -309,4 +313,15 @@ void BubbleIhmsen::computeNormals()
 		}
 	 }
 
+}
+
+void BubbleIhmsen::performNeighborhoodSearchSort()
+{
+	const unsigned int numPart = m_model->numActiveParticles();
+	if (numPart == 0)
+		return;
+
+	Simulation* sim = Simulation::getCurrent();
+	auto const& d = sim->getNeighborhoodSearch()->point_set(m_model->getPointSetIndex());
+	d.sort_field(&m_normals[0]);
 }

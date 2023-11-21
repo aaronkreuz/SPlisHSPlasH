@@ -48,6 +48,7 @@ namespace SPH
 		static int ENUM_COHESION_FORCE_IHMSEN;
 		static int ENUM_COHESION_FORCE_SURFACE_TENSION;
 		static int ENUM_COHESION_FORCE_IHMSEN_KERNEL;
+		static int ENUM_COHESION_FORCE_AKINCI2013;
 
 		static int BUOYANCY_FORCE;
 		static int ENUM_BUOYANCY_FORCE_NONE;
@@ -65,19 +66,19 @@ namespace SPH
 		{
 			return m_normals[i];
 		}
-
+		
 		FORCE_INLINE const Vector3r &getNormal(const unsigned int i) const
 		{
 			return m_normals[i];
 		}
-
+		
 		FORCE_INLINE void setNormal(const unsigned int i, const Vector3r &val)
 		{
 			m_normals[i] = val;
 		}
 
 
-		//virtual void performNeighborhoodSearchSort();
+		virtual void performNeighborhoodSearchSort();
 
 	};
 }
