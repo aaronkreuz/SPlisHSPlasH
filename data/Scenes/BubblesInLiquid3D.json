@@ -1,0 +1,82 @@
+{
+    "Configuration":
+    {
+        "pause": true,
+        "particleRadius": 0.025,
+        "colorMapType": 1,
+        "numberOfStepsPerRenderUpdate": 4,
+        "simulationMethod": 11,
+        "gravitation" : [0.0, -9.81, 0.0],
+        "cflMethod": 1,
+        "cflFactor": 1,
+        "cflMaxTimeStepSize": 0.005,
+        "maxIterations": 100,
+        "maxError": 0.1,
+        "maxIterationsV": 100,
+        "maxErrorV": 0.1,
+        "stiffness": 50000,
+        "exponent": 7,
+        "velocityUpdateMethod": 0,
+        "enableDivergenceSolver": true,
+        "boundaryHandlingMethod": 0
+    },
+
+    "Materials": [
+		{
+			"id": "Liquid",
+			"surfaceTension": 0.2,
+			"surfaceTensionMethod": 0,		
+			"viscosity": 0.01,
+			"viscosityMethod": 1, 
+			"vorticityMethod": 1, 
+			"vorticity": 0.1, 
+			"viscosityOmega": 0.05,
+			"inertiaInverse": 0.5,
+			"colorMapType": 0,
+            "density0": 1000.0,
+            "bubbleMethod": 1
+		},
+        {
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 1.4,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1
+        }
+    ],
+
+    "RigidBodies": [
+		{
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,1.5,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [4, 3, 1],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true,
+			"mapInvert": true, 
+			"mapThickness": 0.0,
+			"mapResolution": [30,30,20]
+		}
+	],
+
+    "FluidBlocks": [
+		{
+            "id": "Liquid",
+			"denseMode": 0,
+			"start": [-2.0, 0.0, -0.5],
+			"end": [2.0, 2.0, 0.5],
+			"translation": [0.0, 0.025, 0.0],
+			"scale": [1, 1, 1]
+		},
+		{
+            "id": "Air",
+            "denseMode": 0,
+            "start": [-0.25, 0.0, -0.5],
+            "end": [0.25, 0.5, 0.5],
+            "translation": [0.025, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        }
+	]	
+}

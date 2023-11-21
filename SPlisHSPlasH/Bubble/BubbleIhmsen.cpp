@@ -27,6 +27,9 @@ int BubbleIhmsen::ENUM_DRAG_FORCE_AIR_IHMSEN = -1;
 BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	BubbleBase(model)
 {
+	m_normals.resize(model->numParticles(), Vector3r::Zero());
+	model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
+
 	if(model->getId() == "Air"){
 		m_cohesionForce = 1;
 		m_buoyancyForce = 1;
@@ -44,6 +47,8 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 
 BubbleIhmsen::~BubbleIhmsen(void)
 {
+	m_model->removeFieldByName("normal");
+	m_normals.clear();
 }
 
 void BubbleIhmsen::initParameters()
@@ -111,7 +116,7 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	}
 	else if(m_cohesionForce == ENUM_COHESION_FORCE_IHMSEN_KERNEL)
 	{
-		// TODO
+		computeCohesionIhmsenKernel(model);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -136,6 +141,7 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	}
 }
 
+// Standard method used in BUBBLE-paper
 void BubbleIhmsen::computeCohesionIhmsen(FluidModel* model){
 	 Simulation* sim = Simulation::getCurrent();
 	 const unsigned int fluidModelIndex = m_model->getPointSetIndex();
@@ -152,6 +158,64 @@ void BubbleIhmsen::computeCohesionIhmsen(FluidModel* model){
 	 }
 }
 
+// Standard method of Ihmsen et al. supplemented with a Kernel scaling
+void BubbleIhmsen::computeCohesionIhmsenKernel(FluidModel* model){
+	 Simulation* sim = Simulation::getCurrent();
+	 const unsigned int fluidModelIndex = m_model->getPointSetIndex();
+	 unsigned int numParticles = model->numActiveParticles();
+	 for (int i = 0; i < numParticles; i++){
+		Vector3r& acceleration = model->getAcceleration(i);
+		const Vector3r& xi = model->getPosition(i);
+		Vector3r acc_cohesion = Vector3r::Zero();
+
+		forall_fluid_neighbors_in_same_phase(
+			const Real densj = model->getDensity(neighborIndex);
+			const Vector3r xij = xi - xj;
+			acc_cohesion += densj * xij * sim->W(xij);
+			);
+
+		acceleration -= m_cohesionCoefficient * acc_cohesion;
+	 }
+}
+
+void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
+	// CohesionKernel::W();
+	Simulation* sim = Simulation::getCurrent();
+	unsigned int fluidModelIndex = m_model->getPointSetIndex();
+	const Real supportRadius = sim->getSupportRadius();
+	const unsigned int numParticles = model->numActiveParticles();
+	const Real density0 = m_model->getDensity0();
+
+	computeNormals();
+
+	for(int i = 0; i < numParticles; i++){
+		Vector3r& accel = model->getAcceleration(i);
+		Vector3r a_ij = Vector3r::Zero();
+		const Vector3r& xi = model->getPosition(i);
+		const Vector3r& ni = getNormal(i);
+		const Real& rhoi = m_model->getDensity(i);
+
+		forall_fluid_neighbors_in_same_phase(
+			Vector3r xij = (xi-xj);
+			const Real mj = model->getMass(neighborIndex);
+			const Real& rhoj = model->getDensity(neighborIndex);
+			const Real K_ij = static_cast<Real>(2.0)*density0 / (rhoi + rhoj);
+			a_ij.setZero();
+
+			a_ij -= m_cohesionCoefficient * mj * (xij / xij.norm()) * CohesionKernel::W(xi-xj);
+
+			const Vector3r& nj = getNormal(neighborIndex);
+			a_ij -= m_cohesionCoefficient * (ni-nj);
+
+			accel += K_ij * a_ij;
+		);
+	}
+
+	// Should I consider the boundary here?
+
+}
+
+// Standard method used in BUBBLE-paper
 void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
 	 Simulation* sim = Simulation::getCurrent();
 	 const unsigned int fluidModelIndex = m_model->getPointSetIndex();
@@ -172,6 +236,7 @@ void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
 	 }
 }
 
+// Standard method used in BUBBLE-paper
 void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
 	 Simulation* sim = Simulation::getCurrent();
 	 TimeManager* tm = TimeManager::getCurrent();
@@ -213,4 +278,35 @@ void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
 	 }
 }
 
+// copied from SurfaceTension_Akinci2013.cpp
+void BubbleIhmsen::computeNormals()
+{
+	 Simulation *sim = Simulation::getCurrent();
+	 const Real supportRadius = sim->getSupportRadius();
+	 const unsigned int numParticles = m_model->numActiveParticles();
+	 const unsigned int fluidModelIndex = m_model->getPointSetIndex();
+	 const unsigned int nFluids = sim->numberOfFluidModels();
+	 FluidModel *model = m_model;
 
+	 // Compute normals
+	#pragma omp parallel default(shared)
+	 {
+		#pragma omp for schedule(static)
+		for (int i = 0; i < (int)numParticles; i++)
+		{
+			const Vector3r &xi = m_model->getPosition(i);
+			Vector3r &ni = getNormal(i);
+			ni.setZero();
+
+			//////////////////////////////////////////////////////////////////////////
+			// Fluid
+			//////////////////////////////////////////////////////////////////////////
+			forall_fluid_neighbors_in_same_phase(
+				const Real density_j = m_model->getDensity(neighborIndex);
+				ni += m_model->getMass(neighborIndex) / density_j * sim->gradW(xi - xj);
+				)
+				ni = supportRadius*ni;
+		}
+	 }
+
+}

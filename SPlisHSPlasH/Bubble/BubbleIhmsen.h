@@ -16,6 +16,8 @@ namespace SPH
 	class BubbleIhmsen : public BubbleBase
 	{
 	protected:
+		std::vector<Vector3r> m_normals;
+
 		int m_cohesionForce = 0;
 		int m_buoyancyForce = 0;
 		int m_dragForceLiq = 0;
@@ -24,6 +26,9 @@ namespace SPH
 		void computeForces(FluidModel* model);
 
 		void computeCohesionIhmsen(FluidModel* model);
+		void computeCohesionIhmsenKernel(FluidModel* model);
+		void computeCohesionAkinci2013(FluidModel* model);
+		void computeNormals(void);
 		void computeBouyancyIhmsen(FluidModel* model);
 		void computeDragIhmsen(FluidModel* model);
 
@@ -55,6 +60,21 @@ namespace SPH
 		static int DRAG_FORCE_AIR;
 		static int ENUM_DRAG_FORCE_AIR_NONE;
 		static int ENUM_DRAG_FORCE_AIR_IHMSEN;
+
+		FORCE_INLINE Vector3r &getNormal(const unsigned int i)
+		{
+			return m_normals[i];
+		}
+
+		FORCE_INLINE const Vector3r &getNormal(const unsigned int i) const
+		{
+			return m_normals[i];
+		}
+
+		FORCE_INLINE void setNormal(const unsigned int i, const Vector3r &val)
+		{
+			m_normals[i] = val;
+		}
 
 
 		//virtual void performNeighborhoodSearchSort();
