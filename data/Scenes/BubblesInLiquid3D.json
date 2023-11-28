@@ -28,20 +28,23 @@
 			"surfaceTensionMethod": 0,		
 			"viscosity": 0.01,
 			"viscosityMethod": 1, 
-			"vorticityMethod": 1, 
-			"vorticity": 0.1, 
+			"vorticityMethod": 0, 
 			"viscosityOmega": 0.05,
 			"inertiaInverse": 0.5,
 			"colorMapType": 0,
             "density0": 1000.0,
-            "bubbleMethod": 1
+            "bubbleMethod": 1,
+            "renderModel": false
 		},
         {
             "id": "Air",
             "colorMapType": 0,
             "density0": 1.4,
             "viscosityMethod": 0,
-            "bubbleMethod": 1
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 40.0,
+            "renderModel": true
         }
     ],
 
@@ -73,8 +76,8 @@
 		{
             "id": "Air",
             "denseMode": 0,
-            "start": [-0.25, 0.0, -0.5],
-            "end": [0.25, 0.5, 0.5],
+            "start": [-0.25, 0.0, -0.25],
+            "end": [0.25, 0.5, 0.25],
             "translation": [0.025, 0.025, 0.0],
             "scale": [1, 1, 1]
         }
