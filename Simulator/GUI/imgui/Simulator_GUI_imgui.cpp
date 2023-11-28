@@ -619,14 +619,18 @@ void Simulator_GUI_imgui::render()
 
 		const FieldDescription* field = nullptr;
 		field = &model->getField(base->getColorField(i));
+		bool renderModel = model->getValue<bool>(FluidModel::RENDER_MODEL);
 
 		bool useScalarField = true;
 		if ((field == nullptr) || (base->getScalarField(i).size() == 0))
 			useScalarField = false;
-		Simulator_OpenGL::renderFluid(model, fluidColor, base->getColorMapType(i),
-			useScalarField, base->getScalarField(i), base->getRenderMinValue(i), base->getRenderMaxValue(i));
-		Simulator_OpenGL::renderSelectedParticles(model, getSelectedParticles(), base->getColorMapType(i),
-			base->getRenderMinValue(i), base->getRenderMaxValue(i));
+
+		if(renderModel){
+			Simulator_OpenGL::renderFluid(model, fluidColor, base->getColorMapType(i),
+				useScalarField, base->getScalarField(i), base->getRenderMinValue(i), base->getRenderMaxValue(i));
+			Simulator_OpenGL::renderSelectedParticles(model, getSelectedParticles(), base->getColorMapType(i),
+				base->getRenderMinValue(i), base->getRenderMaxValue(i));
+		}
 	}
 	renderBoundary();
 	update();

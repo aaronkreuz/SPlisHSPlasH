@@ -28,6 +28,7 @@ int FluidModel::VISCOSITY_METHOD = -1;
 int FluidModel::VORTICITY_METHOD = -1;
 int FluidModel::ELASTICITY_METHOD = -1;
 int FluidModel::BUBBLE_METHOD = -1;
+int FluidModel::RENDER_MODEL = -1;
 
 
 FluidModel::FluidModel() :
@@ -66,6 +67,7 @@ FluidModel::FluidModel() :
 	m_bubble = nullptr;
 	m_bubbleMethodChanged = nullptr;
 	m_xsph = nullptr;
+	m_renderModel = true;
 
 	addField({ "id", FieldType::UInt, [&](const unsigned int i) -> unsigned int* { return &getParticleId(i); }, true });
     addField({ "state", FieldType::UInt, [&](const unsigned int i) -> unsigned int* { return (unsigned int*)(&m_particleState[i]); }, true });
@@ -131,6 +133,10 @@ void FluidModel::initParameters()
 {
 	std::string groupName = std::string("Fluid Model|") + getId();
 	ParameterObject::initParameters();
+
+	RENDER_MODEL = createBoolParameter("renderModel" , "Render model " + this->getId(), &m_renderModel);
+	setGroup(RENDER_MODEL, "Fluid Model|Rendering");
+	setDescription(RENDER_MODEL, "Toggle model rendering");
 
 	ParameterBase::GetFunc<Real> getDensity0Fct = std::bind(&FluidModel::getDensity0, this);
 	ParameterBase::SetFunc<Real> setDensity0Fct = std::bind(&FluidModel::setDensity0, this, std::placeholders::_1);

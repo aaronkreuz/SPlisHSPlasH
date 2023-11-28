@@ -90,6 +90,8 @@ namespace SPH
 			static int ELASTICITY_METHOD;
 			static int BUBBLE_METHOD;
 
+			static int RENDER_MODEL;
+
 			FluidModel();
 			FluidModel(const FluidModel&) = delete;
             FluidModel& operator=(const FluidModel&) = delete;
@@ -157,6 +159,8 @@ namespace SPH
 
 			unsigned int m_numActiveParticles;
 			unsigned int m_numActiveParticles0;
+
+			bool m_renderModel;
 
 			virtual void initParameters();
 

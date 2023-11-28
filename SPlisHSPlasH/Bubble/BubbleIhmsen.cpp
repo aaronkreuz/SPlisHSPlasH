@@ -11,6 +11,7 @@ int BubbleIhmsen::ENUM_COHESION_FORCE_IHMSEN = -1;
 int BubbleIhmsen::ENUM_COHESION_FORCE_SURFACE_TENSION = -1;
 int BubbleIhmsen::ENUM_COHESION_FORCE_IHMSEN_KERNEL = -1;
 int BubbleIhmsen::ENUM_COHESION_FORCE_AKINCI2013 = -1;
+int BubbleIhmsen::ENUM_USE_SURFACE_TENSION = -1;
 
 int BubbleIhmsen::BUOYANCY_FORCE = -1;
 int BubbleIhmsen::ENUM_BUOYANCY_FORCE_NONE = -1;
@@ -32,7 +33,7 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	// model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
 
 	if(model->getId() == "Air"){
-		m_cohesionForce = 1;
+		m_cohesionForce = 5;
 		m_buoyancyForce = 1;
 		m_dragForceLiq = 0;
 		m_dragForceAir = 1;
@@ -65,6 +66,7 @@ void BubbleIhmsen::initParameters()
 		enumParam->addEnumValue("Surface Tension", ENUM_COHESION_FORCE_SURFACE_TENSION);
 		enumParam->addEnumValue("Ihmsen Kernel", ENUM_COHESION_FORCE_IHMSEN_KERNEL);
 		enumParam->addEnumValue("Akinci 2013", ENUM_COHESION_FORCE_AKINCI2013);
+		enumParam->addEnumValue("Use Surface Tension methods", ENUM_USE_SURFACE_TENSION);
 
 		BUOYANCY_FORCE = createEnumParameter("buoyancyForceType", "Buoyancy force", &m_buoyancyForce);
 		setGroup(BUOYANCY_FORCE, "Fluid Model|Bubble Forces");
@@ -122,6 +124,11 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	else if (m_cohesionForce == ENUM_COHESION_FORCE_AKINCI2013) 
 	{
 		computeCohesionAkinci2013(model);
+	}
+	else if(m_cohesionForce == ENUM_USE_SURFACE_TENSION)
+	{
+		// just links to the registered surface tension method as cohesion method
+		model->computeSurfaceTension();
 	}
 
 	//////////////////////////////////////////////////////////////////////////

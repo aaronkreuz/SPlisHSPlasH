@@ -35,14 +35,18 @@
 			"inertiaInverse": 0.5,
 			"colorMapType": 0,
             "density0": 1000.0,
-            "bubbleMethod": 1
+            "bubbleMethod": 1,
+            "renderModel": false
 		},
         {
             "id": "Air",
             "colorMapType": 0,
             "density0": 1.4,
             "viscosityMethod": 0,
-            "bubbleMethod": 1
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 100.0,
+            "renderModel": true
         }
     ],
 
