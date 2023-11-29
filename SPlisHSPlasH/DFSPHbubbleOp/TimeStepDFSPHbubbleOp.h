@@ -69,6 +69,9 @@ namespace SPH
 		void computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, std::vector<std::vector<Real>>& pressure_rho2, const bool applyBoundaryForces = false);
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 
+		void trappedAir();
+		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos);
+
 		/** Perform the neighborhood search for all fluid particles.
 		*/
 		void performNeighborhoodSearch();

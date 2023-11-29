@@ -263,11 +263,71 @@ void TimeStepDFSPHbubbleOp::step()
 	sim->animateParticles();
 
 	//////////////////////////////////////////////////////////////////////////
+	// emit air particles based on the velocity field of the liquid
+	//////////////////////////////////////////////////////////////////////////
+	trappedAir();
+
+	//////////////////////////////////////////////////////////////////////////
 	// Compute new time
 	//////////////////////////////////////////////////////////////////////////
 	tm->setTime (tm->getTime () + h);
 }
 
+void TimeStepDFSPHbubbleOp::trappedAir(){
+	Simulation* sim = Simulation::getCurrent();
+	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
+	FluidModel* model = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
+	const unsigned int fluidModelIndex = model->getPointSetIndex();
+	const unsigned int numLiqParticles = model->numActiveParticles();
+
+	if ((airModel->numActiveParticles() >= airModel->numParticles()))
+		return;
+
+	// TODO: user-defined threshold
+	const Real v_min = 9.0; // min. velocity for liquid particle to generate an air particle
+	const Real vt = 0.3; // threshold for velocity difference between liquid particle and its liquid neighbors
+
+	for (int i = 0; i < numLiqParticles; i++){
+		const Vector3r& xi = model->getPosition(i);
+		const Vector3r& vi = model->getVelocity(i);
+
+		if(vi.squaredNorm() < v_min){
+			continue;
+		}
+
+		// compute v_diff
+		Vector3r v_diff = Vector3r::Zero();
+
+		// loop over liquid neighbors
+		forall_fluid_neighbors_in_same_phase(
+			const Vector3r& vj = model->getVelocity(neighborIndex);
+			const Real& density_j = model->getDensity(neighborIndex);
+			const Vector3r v_ij = vi - vj;
+
+			v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
+		);
+
+		v_diff *= model->getMass(i);
+		Real vDiffNorm = v_diff.norm();
+
+		if (vDiffNorm < vt){
+			continue;
+		}
+
+		// get number of air neighbors of liquid particle i
+		unsigned int numAirNeighbors = 0;
+		numAirNeighbors += sim->numberOfNeighbors(fluidModelIndex, airModel->getPointSetIndex(), i);
+
+		if (numAirNeighbors >= (vDiffNorm / vt))
+			continue;
+
+		// emit air particle
+		unsigned int emittedParticles = 0;
+		emitAirParticleFromVelocityField(emittedParticles, vi, xi);
+
+	}
+
+}
 
 void TimeStepDFSPHbubbleOp::pressureSolve()
 {
@@ -1578,3 +1638,41 @@ void TimeStepDFSPHbubbleOp::computeSurfaceTensionForce(const unsigned int fluidM
 
 
 // #endif
+
+// Ihmsen et al:
+void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos)//(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos)
+{
+	// Explanation: TODO
+	TimeManager *tm = TimeManager::getCurrent();
+	const Real t = tm->getTime();
+	const Real timeStepSize = tm->getTimeStepSize();
+	Simulation *sim = Simulation::getCurrent();
+	const Real radius = sim->getParticleRadius();
+	const Real diam = static_cast<Real>(2.0)*radius;
+
+	FluidModel* liquidModel = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0) : sim->getFluidModel(1);
+	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
+
+	unsigned int indexNotReuse = airModel->numActiveParticles();
+
+	if ((airModel->numActiveParticles() < airModel->numParticles())) // || (reusedParticles.size() > 0))
+	{
+		airModel->getPosition(indexNotReuse) = pos;
+		airModel->getVelocity(indexNotReuse) = vel;
+		airModel->setParticleState(indexNotReuse, ParticleState::Active);
+		airModel->setObjectId(indexNotReuse, 1); //?
+		numEmittedParticles++;
+
+		// m_model->getPosition(index) = (i*diam + startX)*axisWidth + (j*diam + startZ)*axisHeight + offset;
+		// m_model->getVelocity(index) = emitVel;
+		// m_model->setParticleState(index, ParticleState::AnimatedByEmitter);
+		// m_model->setObjectId(index, m_objectId);
+	}
+
+	if (numEmittedParticles != 0)
+	{
+		airModel->setNumActiveParticles(airModel->numActiveParticles() + numEmittedParticles);
+		sim->emittedParticles(airModel, airModel->numActiveParticles() - numEmittedParticles);
+		sim->getNeighborhoodSearch()->resize_point_set(airModel->getPointSetIndex(), &airModel->getPosition(0)[0], airModel->numActiveParticles());
+	}
+}
