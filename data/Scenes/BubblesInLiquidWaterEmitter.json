@@ -38,7 +38,7 @@
 			"colorMapType": 0,
             "density0": 1000.0,
             "bubbleMethod": 1,
-            "renderModel": false
+            "renderModel": true
 		},
         {
             "id": "Air",
@@ -60,9 +60,9 @@
 		{
 			"width": 5, 
 			"height": 5, 
-			"translation": [-1.2,0.8,0.0],
-			"rotationAxis": [0, 1, 0],
-			"rotationAngle": 9.1415926535897932384626433832795,
+			"translation": [-1.2,2.0,0.0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 45,
 			"velocity": 3,
 			"type": 0,
 			"emitEndTime": 4,

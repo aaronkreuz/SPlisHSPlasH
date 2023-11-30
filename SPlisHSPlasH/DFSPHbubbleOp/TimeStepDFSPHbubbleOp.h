@@ -31,6 +31,7 @@ namespace SPH
 		unsigned int m_iterationsV;
 		Real m_maxErrorV;
 		unsigned int m_maxIterationsV;
+		bool m_enableTrappedAir;
 
 		// BUBBLE related constants
 		Real m_dragConstantAir = static_cast<Real>(8.0);
@@ -69,7 +70,9 @@ namespace SPH
 		void computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, std::vector<std::vector<Real>>& pressure_rho2, const bool applyBoundaryForces = false);
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 
-		void trappedAir();
+		void trappedAirIhmsen2011();
+		void trappedAirIhmsen2012();
+
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos);
 
 		/** Perform the neighborhood search for all fluid particles.
@@ -85,6 +88,7 @@ namespace SPH
 		static int MAX_ITERATIONS_V;
 		static int MAX_ERROR_V;
 		static int USE_DIVERGENCE_SOLVER;
+		static int USE_TRAPPED_AIR;
 
 		static int DRAG_COEFFICIENT_AIR;
 		static int DRAG_COEFFICIENT_LIQ;
