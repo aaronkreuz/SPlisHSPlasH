@@ -20,6 +20,8 @@ int TimeStepDFSPHbubbleOp::MAX_ITERATIONS_V = -1;
 int TimeStepDFSPHbubbleOp::MAX_ERROR_V = -1;
 int TimeStepDFSPHbubbleOp::USE_DIVERGENCE_SOLVER = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
+int TimeStepDFSPHbubbleOp::VMIN_TRAPPED_AIR = -1;
+int TimeStepDFSPHbubbleOp::VT_TRAPPED_AIR = -1;
 
 int TimeStepDFSPHbubbleOp::DRAG_COEFFICIENT_AIR = -1;
 int TimeStepDFSPHbubbleOp::DRAG_COEFFICIENT_LIQ = -1;
@@ -41,6 +43,8 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_enableTrappedAir = false;
 	m_maxIterationsV = 100;
 	m_maxErrorV = static_cast<Real>(0.1);
+	m_vMinTrappedAir = static_cast<Real>(9.0);
+	m_vtTrappedAir = static_cast<Real>(0.3);
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
@@ -98,6 +102,14 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	USE_TRAPPED_AIR = createBoolParameter("enableTrappedAir", "Enable trapped air generation", &m_enableTrappedAir);
 	setGroup(USE_TRAPPED_AIR, "Simulation|DFSPH");
 	setDescription(USE_TRAPPED_AIR, "Turn trapped air generation on/off.");
+
+	VMIN_TRAPPED_AIR = createNumericParameter("vMinTrappedAir", "Min. velocity trapped air", &m_vMinTrappedAir);
+	setGroup(VMIN_TRAPPED_AIR, "Simulation|DFSPH");
+	setDescription(VMIN_TRAPPED_AIR, "Minimal velocity of liquid particle to generate an air particle.");
+
+	VT_TRAPPED_AIR = createNumericParameter("vtTrappedAir", "Threshold velocity difference", &m_vtTrappedAir);
+	setGroup(VT_TRAPPED_AIR, "Simulation|DFSPH");
+	setDescription(VT_TRAPPED_AIR, "Threshold velocity difference between liquid particle and its liquid neighbors for air particle generation.");
 }
 
 void TimeStepDFSPHbubbleOp::step()
@@ -258,15 +270,17 @@ void TimeStepDFSPHbubbleOp::step()
 					const Vector3r &vi = fm->getVelocity(i);
 					xi += h * vi;
 				}
+
+				// test for air generation
+				if(m_enableTrappedAir && (fm->getId() == "Liquid")){
+					trappedAirIhmsen2011(m, i);
+				}
+
+				// test for particle deletion
+				// TODO
 			}
 		}
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// emit air particles based on the velocity field of the liquid
-	//////////////////////////////////////////////////////////////////////////
-	if(m_enableTrappedAir)
-		trappedAirIhmsen2012();
 
 	//////////////////////////////////////////////////////////////////////////
 	// emit new particles and perform an animation field step
@@ -280,85 +294,82 @@ void TimeStepDFSPHbubbleOp::step()
 	tm->setTime (tm->getTime () + h);
 }
 
-void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(){
+//////////////////////////////////////////////////////////////////////////
+// emit air particles based on the velocity field of the liquid -> Ihmsen et al. 2011
+//////////////////////////////////////////////////////////////////////////
+void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i){
 	Simulation* sim = Simulation::getCurrent();
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
 	// liquid model -> naming convention
-	FluidModel* model = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
-	const unsigned int fluidModelIndex = model->getPointSetIndex();
+	FluidModel* model = sim->getFluidModel(fluidModelIndex);
 	const unsigned int numLiqParticles = model->numActiveParticles();
 
-	// reached limit of air particle in simulation
-	if ((airModel->numActiveParticles() >= airModel->numParticles()))
+	if((airModel->numActiveParticles() >= airModel->numParticles()))
 		return;
 
-	// TODO: user-defined threshold
-	const Real v_min = 9.0; // min. velocity for liquid particle to generate an air particle
-	const Real vt = 0.3; // threshold for velocity difference between liquid particle and its liquid neighbors
+	const Vector3r& xi = model->getPosition(i);
+	const Vector3r& vi = model->getVelocity(i);
 
-	for (int i = 0; i < numLiqParticles; i++){
-		const Vector3r& xi = model->getPosition(i);
-		const Vector3r& vi = model->getVelocity(i);
-
-		if(vi.squaredNorm() < v_min){
-			continue;
-		}
-
-		// extension AK: check if there is any air particle too close to the current liquid particle
-		const Real radius = sim->getParticleRadius();
-		const Real diam = 2 * radius;
-		const unsigned int nFluids = sim->numberOfFluidModels();
-
-		volatile bool isTooClose = false;
-		// loop over all air particles in this specific case
-		forall_fluid_neighbors_in_different_phase(
-			if(isTooClose)
-				continue;
-
-			const Vector3r xij = xi - xj;
-			if(xij.squaredNorm() < (2.0 * diam * diam)){
-				isTooClose = true;
-			}
-		);
-
-		if(isTooClose){
-			// neighbor air particle too close -> skip this liquid particle
-			continue;
-		}
-
-		// compute v_diff
-		Vector3r v_diff = Vector3r::Zero();
-
-		// loop over liquid neighbors
-		forall_fluid_neighbors_in_same_phase(
-			const Vector3r& vj = model->getVelocity(neighborIndex);
-			const Real& density_j = model->getDensity(neighborIndex);
-			const Vector3r v_ij = vi - vj;
-
-			v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
-		);
-
-		v_diff *= model->getMass(i);
-		Real vDiffNorm = v_diff.norm();
-
-		if (vDiffNorm < vt){
-			continue;
-		}
-
-		// get number of air neighbors of liquid particle i
-		unsigned int numAirNeighbors = 0;
-		numAirNeighbors += sim->numberOfNeighbors(fluidModelIndex, airModel->getPointSetIndex(), i);
-
-		if (numAirNeighbors >= (vDiffNorm / vt))
-			continue;
-
-		// emit air particle
-		unsigned int emittedParticles = 0;
-		emitAirParticleFromVelocityField(emittedParticles, vi, xi);
-
+	if(vi.squaredNorm() < m_vMinTrappedAir){
+		return;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	// extension AK: check if there is any air particle too close to the current liquid particle
+	const Real radius = sim->getParticleRadius();
+	const Real diam = 2 * radius;
+	const unsigned int nFluids = sim->numberOfFluidModels();
+
+	volatile bool isTooClose = false;
+	// loop over all air particles in this specific case
+	forall_fluid_neighbors_in_different_phase(
+		if(isTooClose){
+			continue;
+		}
+
+		const Vector3r xij = xi - xj;
+		if(xij.squaredNorm() < (2.0 * diam * diam)){
+			isTooClose = true;
+		}
+	);
+
+	if(isTooClose){
+		// neighbor air particle too close -> skip this liquid particle
+		return;
+	}
+	//////////////////////////////////////////////////////////////////////////
+
+	// compute v_diff
+	Vector3r v_diff = Vector3r::Zero();
+
+	// loop over liquid neighbors
+	forall_fluid_neighbors_in_same_phase(
+		const Vector3r& vj = model->getVelocity(neighborIndex);
+		const Real& density_j = model->getDensity(neighborIndex);
+		const Vector3r v_ij = vi - vj;
+
+		v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
+		);
+
+	v_diff *= model->getMass(i);
+	Real vDiffNorm = v_diff.norm();
+
+	if (vDiffNorm < m_vtTrappedAir){
+		return;
+	}
+
+	// get number of air neighbors of liquid particle i
+	unsigned int numAirNeighbors = 0;
+	numAirNeighbors += sim->numberOfNeighbors(fluidModelIndex, airModel->getPointSetIndex(), i);
+
+	if (numAirNeighbors >= (vDiffNorm / m_vtTrappedAir))
+		return;
+
+	// emit air particle
+	unsigned int emittedParticles = 0;
+	emitAirParticleFromVelocityField(emittedParticles, vi, xi);
 }
+
 
 // trapped air generation Ihmsen et al. 2012: "Unified spray, foam and air bubbles for particle-based fluids"
 void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012()
@@ -371,12 +382,23 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012()
 		return (min(v_diff, tMax) - min(v_diff, tMin)) / (tMax - tMin);
 	};
 
+
 	Simulation* sim = Simulation::getCurrent();
+	const Real& supportRadius = sim->getSupportRadius();
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
 	// liquid model -> naming convention
 	FluidModel* model = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
 	const unsigned int fluidModelIndex = model->getPointSetIndex();
 	const unsigned int numLiqParticles = model->numActiveParticles();
+
+	auto customW = [&supportRadius](const Vector3r& dist) -> Real{
+		const Real distNorm = dist.norm();
+		if(distNorm <= supportRadius){
+			return (1.0 - ((1.0/supportRadius)*distNorm));
+		}
+		return 0.0;
+	};
+
 
 	// reached limit of air particle in simulation
 	if ((airModel->numActiveParticles() >= airModel->numParticles()))
@@ -391,6 +413,31 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012()
 		if(vi.squaredNorm() < v_min)
 			continue;
 
+		//////////////////////////////////////////////////////////////////////////
+		// extension AK: check if there is any air particle too close to the current liquid particle
+		const Real radius = sim->getParticleRadius();
+		const Real diam = 2 * radius;
+		const unsigned int nFluids = sim->numberOfFluidModels();
+
+		volatile bool isTooClose = false;
+		// loop over all air particles in this specific case
+		forall_fluid_neighbors_in_different_phase(
+			if(isTooClose){
+				continue;
+			}
+
+			const Vector3r xij = xi - xj;
+			if(xij.squaredNorm() < (2.0 * diam * diam)){
+				isTooClose = true;
+			}
+		);
+
+		if(isTooClose){
+			// neighbor air particle too close -> skip this liquid particle
+			continue;
+		}
+		//////////////////////////////////////////////////////////////////////////
+
 		Real probability = 0;
 		Real v_diff = 0;
 
@@ -402,12 +449,12 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012()
 			const Vector3r vij_normalized = vij.normalized();
 			const Vector3r xij_normalized = xij.normalized();
 
-			v_diff += vij.norm() * (1 - vij_normalized.dot(xij_normalized)) * sim->W(xij);
+			v_diff += vij.norm() * (1 - vij_normalized.dot(xij_normalized)) * customW(xij);
 		);
 
 		probability = clamp(v_diff);
 
-		if(probability < 0.1)
+		if(probability < 0.5)
 			continue;
 
 		// emit air particle
@@ -1747,7 +1794,7 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 		airModel->getPosition(indexNotReuse) = pos;
 		airModel->getVelocity(indexNotReuse) = vel;
 		airModel->setParticleState(indexNotReuse, ParticleState::Active);
-		airModel->setObjectId(indexNotReuse, 1); //?
+		// airModel->setObjectId(indexNotReuse, 1); //?
 		numEmittedParticles++;
 
 		// m_model->getPosition(index) = (i*diam + startX)*axisWidth + (j*diam + startZ)*axisHeight + offset;

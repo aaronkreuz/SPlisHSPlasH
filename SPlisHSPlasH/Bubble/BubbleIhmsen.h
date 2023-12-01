@@ -17,6 +17,9 @@ namespace SPH
 	{
 	protected:
 		std::vector<Vector3r> m_normals;
+		std::vector<unsigned int> m_onSurface; // tracks if air particle reached the surface
+
+		Real m_onSurfaceThresholdDensity = 0.5; // TODO: changeable
 
 		int m_cohesionForce = 0;
 		int m_buoyancyForce = 0;
@@ -29,6 +32,7 @@ namespace SPH
 		void computeCohesionIhmsenKernel(FluidModel* model);
 		void computeCohesionAkinci2013(FluidModel* model);
 		void computeNormals(void);
+		void computeOnSurface(void);
 		void computeBouyancyIhmsen(FluidModel* model);
 		void computeDragIhmsen(FluidModel* model);
 
@@ -76,6 +80,16 @@ namespace SPH
 		FORCE_INLINE void setNormal(const unsigned int i, const Vector3r &val)
 		{
 			m_normals[i] = val;
+		}
+
+		FORCE_INLINE const bool &getOnSurface(const unsigned int i) const
+		{
+			return m_onSurface[i];
+		}
+
+		FORCE_INLINE void setOnSurface(const unsigned int i, const bool val)
+		{
+			m_onSurface[i] = val;
 		}
 
 

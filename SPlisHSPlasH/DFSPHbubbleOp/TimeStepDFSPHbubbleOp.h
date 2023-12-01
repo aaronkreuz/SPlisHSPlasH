@@ -41,6 +41,8 @@ namespace SPH
 		Real m_minBouyancy = static_cast<Real>(2.4);
 		const Real m_cohesionConstant = static_cast<Real>(12.0);
 		const Real m_surfaceTensionConstant = static_cast<Real>(1.0);
+		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011
+		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
 
 		int m_cohesionForce;
 
@@ -70,7 +72,7 @@ namespace SPH
 		void computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, std::vector<std::vector<Real>>& pressure_rho2, const bool applyBoundaryForces = false);
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 
-		void trappedAirIhmsen2011();
+		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i);
 		void trappedAirIhmsen2012();
 
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos);
@@ -89,6 +91,8 @@ namespace SPH
 		static int MAX_ERROR_V;
 		static int USE_DIVERGENCE_SOLVER;
 		static int USE_TRAPPED_AIR;
+		static int VMIN_TRAPPED_AIR;
+		static int VT_TRAPPED_AIR;
 
 		static int DRAG_COEFFICIENT_AIR;
 		static int DRAG_COEFFICIENT_LIQ;

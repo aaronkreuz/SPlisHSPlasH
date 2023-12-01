@@ -32,6 +32,8 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	m_normals.resize(model->numParticles(), Vector3r::Zero());
 	// model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
 
+	m_onSurface.resize(model->numParticles(), 0);
+
 	if(model->getId() == "Air"){
 		m_cohesionForce = 5;
 		m_buoyancyForce = 1;
@@ -44,12 +46,16 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 		m_dragForceLiq = 1;
 		m_dragForceAir = 0;
 	}
+
+	m_onSurfaceThresholdDensity = 0.5; // TODO: changeable
 }
 
 BubbleIhmsen::~BubbleIhmsen(void)
 {
 	// m_model->removeFieldByName("normal");
 	m_normals.clear();
+
+	m_onSurface.clear();
 }
 
 void BubbleIhmsen::initParameters()
@@ -228,13 +234,21 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 
 // Standard method used in BUBBLE-paper
 void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
-	 Simulation* sim = Simulation::getCurrent();
-	 const unsigned int fluidModelIndex = m_model->getPointSetIndex();
-	 unsigned int numParticles = model->numActiveParticles();
-	 const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
+	Simulation* sim = Simulation::getCurrent();
+	const unsigned int fluidModelIndex = model->getPointSetIndex();
+	unsigned int numParticles = model->numActiveParticles();
+	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
 
-	 for(int i = 0; i < numParticles; i++){
+	computeOnSurface();
+
+	for(int i = 0; i < numParticles; i++){
 		Vector3r& acceleration = model->getAcceleration(i);
+
+		// check if particle in on the surface and if yes: compute different buoyancy
+		if(m_onSurface[i]){
+			acceleration += grav;
+			continue;
+		}
 
 		Vector3r acc_bouyancy = Vector3r::Zero();
 
@@ -319,6 +333,48 @@ void BubbleIhmsen::computeNormals()
 				ni = supportRadius*ni;
 		}
 	 }
+}
+
+// compute state of the air particles: on surface or inside liquid
+void BubbleIhmsen::computeOnSurface(){
+	Simulation *sim = Simulation::getCurrent();
+	const unsigned int numParticles = m_model->numActiveParticles();
+	const unsigned int nFluids = sim->numberOfFluidModels();
+	const unsigned int fluidModelIndex = m_model->getPointSetIndex();
+	FluidModel* model = m_model; // air model
+	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
+
+	for(int i = 0; i < numParticles; i++){
+		const Real density_i = m_model->getDensity(i);
+		const Vector3r& xi = m_model->getPosition(i);
+
+		if(m_onSurface[i]){
+			// for now: if particle is on surface, it stays on surface -> Might be adapted later
+			continue;
+		}
+
+		// This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
+		// if(density_i > m_onSurfaceThresholdDensity){
+		// 	m_onSurface[i] = 1;
+		// }
+
+		// look for number of liquid particle neighbors of the air particle
+		// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
+		// std::cout << numLiqNeighbors << std::endl;
+
+		volatile bool onSurface = true;
+		// looping over liquid neighbors
+		forall_fluid_neighbors_in_different_phase(
+			if(!onSurface){
+				continue;
+			}
+			if((xj-xi).dot(grav) < 0){
+				onSurface = false;
+			}
+		);
+
+		m_onSurface[i] = onSurface;
+	}
 
 }
 
@@ -331,4 +387,5 @@ void BubbleIhmsen::performNeighborhoodSearchSort()
 	Simulation* sim = Simulation::getCurrent();
 	auto const& d = sim->getNeighborhoodSearch()->point_set(m_model->getPointSetIndex());
 	d.sort_field(&m_normals[0]);
+	d.sort_field(&m_onSurface[0]);
 }
