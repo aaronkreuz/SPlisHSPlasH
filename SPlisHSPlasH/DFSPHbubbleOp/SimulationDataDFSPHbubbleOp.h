@@ -32,6 +32,8 @@ namespace SPH
 			std::vector<std::vector<Real>> m_pressure_rho2_V;
 			std::vector<std::vector<Vector3r>> m_pressureAccel;
 
+			std::vector<unsigned int> m_airParticlesForReuse;
+
 		public:
 
 			/** Initialize the arrays containing the particle data.
@@ -54,6 +56,7 @@ namespace SPH
 
 			std::vector<std::vector<Real>>& getPressureRho2Data() { return m_pressure_rho2; }
 			std::vector<std::vector<Real>>& getPressureRho2VData() { return m_pressure_rho2_V; }
+			std::vector<unsigned int>& getParticlesForReuse() {return m_airParticlesForReuse; }
 
 			FORCE_INLINE const Real getFactor(const unsigned int fluidIndex, const unsigned int i) const
 			{

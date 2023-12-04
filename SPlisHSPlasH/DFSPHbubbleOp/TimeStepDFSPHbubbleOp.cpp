@@ -182,13 +182,6 @@ void TimeStepDFSPHbubbleOp::step()
 	// INFO: stored in acceleration array of fluid-model
 	// note that neighbors and densities are already determined at this point
 
-	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
-		// compute the forces for the air-bubble simulation. Ihmsen et al. 2011
-		// i.e. drag, bouyancy, cohesion
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		fm->computeBubbleForces();
-	}
-
 	//////////////////////////////////////////////////////////////////////////
 	// Viscosity XSPH
 	//////////////////////////////////////////////////////////////////////////
@@ -253,17 +246,22 @@ void TimeStepDFSPHbubbleOp::step()
 	STOP_TIMING_AVG;
 
 	//////////////////////////////////////////////////////////////////////////
-	// compute final positions
+	// compute final positions + particle generation and deletion
 	//////////////////////////////////////////////////////////////////////////
 	for (unsigned int m = 0; m < nModels; m++)
 	{
 		FluidModel *fm = sim->getFluidModel(m);
+		unsigned int deletedParticles = 0;
 		const unsigned int numParticles = fm->numActiveParticles();
 		#pragma omp parallel default(shared)
 		{
-			#pragma omp for schedule(static)  
-			for (int i = 0; i < (int)numParticles; i++)
+			#pragma omp for schedule(static)
+			for (int i = 0; i < ((int)numParticles - deletedParticles); i++)
 			{
+				if(fm->getParticleState(i) == ParticleState::Disabled){
+					continue;
+				}
+
 				if (fm->getParticleState(i) == ParticleState::Active)
 				{
 					Vector3r &xi = fm->getPosition(i);
@@ -276,8 +274,33 @@ void TimeStepDFSPHbubbleOp::step()
 					trappedAirIhmsen2011(m, i);
 				}
 
-				// test for particle deletion
-				// TODO
+			}
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// foam air particle deletion
+	//////////////////////////////////////////////////////////////////////////
+	{
+		FluidModel* air = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
+		const unsigned int airModelIndex = air->getPointSetIndex();
+		const unsigned int numParticles = air->numActiveParticles();
+		unsigned int deletedParticles = 0;
+		std::vector<unsigned int>& particlesForReuse = m_simulationData.getParticlesForReuse();
+		particlesForReuse.clear();
+
+		#pragma omp parallel default(shared)
+		{
+			#pragma omp for schedule(static)
+			for(int i = 0; i < numParticles; i++){
+				if(air->getParticleState(i) == ParticleState::Disabled){
+
+					air->getVelocity(i) *= static_cast<Real>(0.01);
+					air->getPosition(i) = Vector3r(1000 + i, 1000, 1000);
+					deletedParticles++;
+
+					m_simulationData.getParticlesForReuse().push_back(i);
+				}
 			}
 		}
 	}
@@ -291,7 +314,7 @@ void TimeStepDFSPHbubbleOp::step()
 	//////////////////////////////////////////////////////////////////////////
 	// Compute new time
 	//////////////////////////////////////////////////////////////////////////
-	tm->setTime (tm->getTime () + h);
+	tm->setTime (tm->getTime() + h);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -485,6 +508,9 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 			#pragma omp for schedule(static)  
 			for (int i = 0; i < numParticles; i++)
 			{
+				if(model->getParticleState(i) == ParticleState::Disabled){
+					continue;
+				}
 				//////////////////////////////////////////////////////////////////////////
 				// Compute rho_adv,i^(0) (see equation in Section 3.3 in [BK17])
 				// using the velocities after the non-pressure forces were applied.
@@ -623,6 +649,9 @@ void TimeStepDFSPHbubbleOp::divergenceSolve()
 			#pragma omp for schedule(static)  
 			for (int i = 0; i < numParticles; i++)
 			{
+				if(model->getParticleState(i) == ParticleState::Disabled){
+					continue;
+				}
 				//////////////////////////////////////////////////////////////////////////
 				// Compute rho_adv,i^(0) (see equation (9) in Section 3.2 [BK17])
 				// using the velocities after the non-pressure forces were applied.
@@ -857,6 +886,9 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 		#pragma omp for schedule(static) 
 		for (int i = 0; i < (int)numParticles; i++)
 		{
+			if(model->getParticleState(i) == ParticleState::Disabled){
+				continue;
+			}
 			computePressureAccel(fluidModelIndex, i, density0, m_simulationData.getPressureRho2VData());
 		}
 
@@ -866,6 +898,10 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 		#pragma omp for reduction(+:density_error) schedule(static) 
 		for (int i = 0; i < numParticles; i++)
 		{
+			if(model->getParticleState(i) == ParticleState::Disabled){
+				continue;
+			}
+
 			Real aij_pj = compute_aij_pj(fluidModelIndex, i);
 			aij_pj *= h;
 
@@ -1348,6 +1384,10 @@ void TimeStepDFSPHbubbleOp::computeDFSPHFactor(const unsigned int fluidModelInde
 		#pragma omp for schedule(static)  
 		for (int i = 0; i < numParticles; i++)
 		{
+			if (model->getParticleState(i) == ParticleState::Disabled){
+				continue;
+			}
+
 			//////////////////////////////////////////////////////////////////////////
 			// Compute gradient dp_i/dx_j * (1/kappa)  and dp_j/dx_j * (1/kappa)
 			// (see Equation (8) and the previous one [BK17])

@@ -224,6 +224,10 @@ void TimeStep::computeDensitiesForSamePhase(const unsigned int fluidModelIndex)
 #pragma omp for schedule(static)
 		for (int i = 0; i < (int) numParticles; i++)
 		{
+			if(model->getParticleState(i) == ParticleState::Disabled){
+				continue;
+			}
+
 			const Vector3r &xi = model->getPosition(i);
 			Real &density = model->getDensity(i);
 			density = model->getVolume(i) * CubicKernel_AVX::W_zero();
