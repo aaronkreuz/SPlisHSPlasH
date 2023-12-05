@@ -1,6 +1,7 @@
 #include "BubbleIhmsen.h"
 #include "SPlisHSPlasH/Simulation.h"
 #include "SPlisHSPlasH/TimeManager.h"
+#include "SPlisHSPlasH/DFSPHbubbleOp/TimeStepDFSPHbubbleOp.h"
 
 using namespace SPH;
 using namespace GenParam;
@@ -32,10 +33,6 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	m_normals.resize(model->numParticles(), Vector3r::Zero());
 	// model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
 
-	m_onSurface.resize(model->numParticles(), 0);
-
-	m_lifetime.resize(model->numParticles(), 2.0f); // in paper: 0.7 sec.
-
 	if(model->getId() == "Air"){
 		m_cohesionForce = 5;
 		m_buoyancyForce = 1;
@@ -56,10 +53,6 @@ BubbleIhmsen::~BubbleIhmsen(void)
 {
 	// m_model->removeFieldByName("normal");
 	m_normals.clear();
-
-	m_onSurface.clear();
-
-	m_lifetime.clear();
 }
 
 void BubbleIhmsen::initParameters()
@@ -113,10 +106,6 @@ void BubbleIhmsen::step()
 
 void BubbleIhmsen::reset()
 {
-	const unsigned int numPart = m_model->numActiveParticles();
-	for (int i = 0; i < numPart; i++)
-		m_lifetime[i] = 2.0f; // in paper: 0.7 sec.
-
 }
 
 void BubbleIhmsen::computeForces(FluidModel* model){
@@ -251,7 +240,7 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 		);
 	}
 
-	// Should I consider the boundary here?
+	// TODO: Should I consider the boundary here?
 }
 
 // Standard method used in BUBBLE-paper
@@ -261,26 +250,32 @@ void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
 	unsigned int numParticles = model->numActiveParticles();
 	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
 
-	computeOnSurface();
+	// TODO: Better solution?
+	TimeStepDFSPHbubbleOp* timeStep = (TimeStepDFSPHbubbleOp*)sim->getTimeStep();
+	// computeOnSurface(); // Moved to simulationData
 
-	for(int i = 0; i < numParticles; i++){
-		Vector3r& acceleration = model->getAcceleration(i);
+	#pragma omp parallel default(shared)
+	{
+		#pragma omp for schedule(static)
+		for(int i = 0; i < numParticles; i++){
+			Vector3r& acceleration = model->getAcceleration(i);
 
-		// check if particle in on the surface and if yes: compute different buoyancy
-		if(m_onSurface[i]){
-			acceleration += grav;
-			continue;
+			// check if particle in on the surface and if yes: compute different buoyancy
+			if(timeStep->getOnSurface(i)){
+				acceleration += grav;
+				continue;
+			}
+
+			Vector3r acc_bouyancy = Vector3r::Zero();
+
+			// look for number of air particle neighbors
+			int numNeighbors = sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
+
+			// equation (10)
+			acc_bouyancy = m_minBuoyancy * (m_kmaxBuoyancy - (m_kmaxBuoyancy - 1) * exp(-0.1 * numNeighbors)) * grav;
+			acceleration -= acc_bouyancy;
 		}
-
-		Vector3r acc_bouyancy = Vector3r::Zero();
-
-		// look for number of air particle neighbors
-		int numNeighbors = sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
-
-		// equation (10)
-		acc_bouyancy = m_minBuoyancy * (m_kmaxBuoyancy - (m_kmaxBuoyancy - 1) * exp(-0.1 * numNeighbors)) * grav;
-		acceleration -= acc_bouyancy;
-	 }
+	}
 }
 
 // Standard method used in BUBBLE-paper
@@ -293,40 +288,44 @@ void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
 	 unsigned int numParticles = model->numActiveParticles();
 	 const Real h2 = h*h;
 
-	 for(int i = 0; i < numParticles; i++){
-		const Real& density_i = model->getDensity(i);
-		const Vector3r& vi = model->getVelocity(i);
-		const Vector3r& xi = model->getPosition(i);
+	#pragma omp parallel default(shared)
+	{
+		#pragma omp for schedule(static)
+		for(int i = 0; i < numParticles; i++){
+			const Real& density_i = model->getDensity(i);
+			const Vector3r& vi = model->getVelocity(i);
+			const Vector3r& xi = model->getPosition(i);
 
-		Vector3r& acceleration = model->getAcceleration(i);
+			Vector3r& acceleration = model->getAcceleration(i);
 
-		Vector3r acc_drag = Vector3r::Zero();
+			Vector3r acc_drag = Vector3r::Zero();
 
-		// drag constant of liquid is considered to be lower because influence of air onto liq might be lower than vice versa.
-		Real dragConstant = m_dragConstantAir;
-		if (model->getId() != "Air"){
-			dragConstant = m_dragConstantLiq;
-		}
-
-		// Note: Does only work for Bubble framework if there is only one liquid and one gas!
-		// So the Makro will only loop over the Air-phase for liquid particles and vice versa.
-		forall_fluid_neighbors_in_different_phase(
-			if(model->getParticleState(neighborIndex) == ParticleState::Disabled){
-				continue;
+			// drag constant of liquid is considered to be lower because influence of air onto liq might be lower than vice versa.
+			Real dragConstant = m_dragConstantAir;
+			if (model->getId() != "Air"){
+				dragConstant = m_dragConstantLiq;
 			}
 
-			const Real m_j = fm_neighbor->getMass(neighborIndex);
-			const Real density_j = fm_neighbor->getDensity(neighborIndex);
-			const Vector3r& vj = fm_neighbor->getVelocity(neighborIndex);
+			// Note: Does only work for Bubble framework if there is only one liquid and one gas!
+			// So the Makro will only loop over the Air-phase for liquid particles and vice versa.
+			forall_fluid_neighbors_in_different_phase(
+				if(model->getParticleState(neighborIndex) == ParticleState::Disabled){
+					continue;
+				}
 
-			const Real pi_ij = std::max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).norm() + m_eps * (h2)));
-			// const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).squaredNorm() + m_eps * (h2)));
+				const Real m_j = fm_neighbor->getMass(neighborIndex);
+				const Real density_j = fm_neighbor->getDensity(neighborIndex);
+				const Vector3r& vj = fm_neighbor->getVelocity(neighborIndex);
 
-			acc_drag += m_j * ((dragConstant*h*m_speedSound)/(density_j + density_i)) * pi_ij * sim->gradW(xi - xj);
+				const Real pi_ij = std::max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).norm() + m_eps * (h2)));
+				// const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).squaredNorm() + m_eps * (h2)));
+
+				acc_drag += m_j * ((dragConstant*h*m_speedSound)/(density_j + density_i)) * pi_ij * sim->gradW(xi - xj);
 			);
 
-		acceleration += acc_drag;
-	 }
+			acceleration += acc_drag;
+		}
+	}
 }
 
 // copied from SurfaceTension_Akinci2013.cpp
@@ -366,63 +365,63 @@ void BubbleIhmsen::computeNormals()
 }
 
 // compute state of the air particles: on surface or inside liquid
-void BubbleIhmsen::computeOnSurface(){
-	Simulation *sim = Simulation::getCurrent();
-	const unsigned int numParticles = m_model->numActiveParticles();
-	const unsigned int nFluids = sim->numberOfFluidModels();
-	const unsigned int fluidModelIndex = m_model->getPointSetIndex();
-	FluidModel* model = m_model; // air model
-	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
-	TimeManager* tm = TimeManager::getCurrent();
-	const Real h = tm->getTimeStepSize();
-
-	for(int i = 0; i < numParticles; i++){
-		if(model->getParticleState(i) == ParticleState::Disabled){
-			continue;
-		}
-
-		const Real density_i = m_model->getDensity(i);
-		const Vector3r& xi = m_model->getPosition(i);
-
-		// This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
-		// if(density_i > m_onSurfaceThresholdDensity){
-		// 	m_onSurface[i] = 1;
-		// }
-
-		// look for number of liquid particle neighbors of the air particle
-		// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
-		// std::cout << numLiqNeighbors << std::endl;
-
-		volatile bool onSurface = true;
-		// looping over liquid neighbors
-		forall_fluid_neighbors_in_different_phase(
-			if(!onSurface){
-				continue;
-			}
-			if((xj-xi).dot(grav) < 0){
-				onSurface = false;
-			}
-		);
-
-		m_onSurface[i] = onSurface;
-
-		if(onSurface){
-			m_lifetime[i] -= h;
-
-			if(m_lifetime[i] <= 0.0){
-				// Disable an air particle at the end of its lifetime
-				model->setParticleState(i, ParticleState::Disabled);
-				// -> clean-up in TimeStep
-				m_onSurface[i] = 0;
-			}
-		}
-
-		// all particles of a bubble should disperse at once.
-		forall_fluid_neighbors_in_same_phase(
-			m_lifetime[i] = std::min(m_lifetime[i], m_lifetime[neighborIndex]);
-		);
-	}
-}
+// void BubbleIhmsen::computeOnSurface(){
+// 	Simulation *sim = Simulation::getCurrent();
+// 	const unsigned int numParticles = m_model->numActiveParticles();
+// 	const unsigned int nFluids = sim->numberOfFluidModels();
+// 	const unsigned int fluidModelIndex = m_model->getPointSetIndex();
+// 	FluidModel* model = m_model; // air model
+// 	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
+// 	TimeManager* tm = TimeManager::getCurrent();
+// 	const Real h = tm->getTimeStepSize();
+//
+// 	for(int i = 0; i < numParticles; i++){
+// 		if(model->getParticleState(i) == ParticleState::Disabled){
+// 			continue;
+// 		}
+//
+// 		const Real density_i = m_model->getDensity(i);
+// 		const Vector3r& xi = m_model->getPosition(i);
+//
+// 		// This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
+// 		// if(density_i > m_onSurfaceThresholdDensity){
+// 		// 	m_onSurface[i] = 1;
+// 		// }
+//
+// 		// look for number of liquid particle neighbors of the air particle
+// 		// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
+// 		// std::cout << numLiqNeighbors << std::endl;
+//
+// 		volatile bool onSurface = true;
+// 		// looping over liquid neighbors
+// 		forall_fluid_neighbors_in_different_phase(
+// 			if(!onSurface){
+// 				continue;
+// 			}
+// 			if((xj-xi).dot(grav) < 0){
+// 				onSurface = false;
+// 			}
+// 		);
+//
+// 		m_onSurface[i] = onSurface;
+//
+// 		if(onSurface){
+// 			m_lifetime[i] -= h;
+//
+// 			if(m_lifetime[i] <= 0.0){
+// 				// Disable an air particle at the end of its lifetime
+// 				model->setParticleState(i, ParticleState::Disabled);
+// 				// -> clean-up in TimeStep
+// 				m_onSurface[i] = 0;
+// 			}
+// 		}
+//
+// 		// all particles of a bubble should disperse at once.
+// 		forall_fluid_neighbors_in_same_phase(
+// 			m_lifetime[i] = std::min(m_lifetime[i], m_lifetime[neighborIndex]);
+// 		);
+// 	}
+// }
 
 void BubbleIhmsen::performNeighborhoodSearchSort()
 {
@@ -433,6 +432,4 @@ void BubbleIhmsen::performNeighborhoodSearchSort()
 	Simulation* sim = Simulation::getCurrent();
 	auto const& d = sim->getNeighborhoodSearch()->point_set(m_model->getPointSetIndex());
 	d.sort_field(&m_normals[0]);
-	d.sort_field(&m_onSurface[0]);
-	d.sort_field(&m_lifetime[0]);
 }

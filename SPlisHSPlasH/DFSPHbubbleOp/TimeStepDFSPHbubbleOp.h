@@ -72,6 +72,7 @@ namespace SPH
 		void computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, std::vector<std::vector<Real>>& pressure_rho2, const bool applyBoundaryForces = false);
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 
+		void computeOnSurfaceAir();
 		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i);
 		void trappedAirIhmsen2012();
 
@@ -104,6 +105,10 @@ namespace SPH
 
 		TimeStepDFSPHbubbleOp();
 		virtual ~TimeStepDFSPHbubbleOp(void);
+
+		FORCE_INLINE unsigned int getOnSurface(const unsigned int i) const {
+			return m_simulationData.getOnSurface(i);
+		}
 
 		/** perform a simulation step */
 		virtual void step();

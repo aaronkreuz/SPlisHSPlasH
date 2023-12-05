@@ -62,7 +62,7 @@
 			"height": 5, 
 			"translation": [-1.2,2.0,0.0],
 			"rotationAxis": [0, 0, 1],
-			"rotationAngle": 45,
+			"rotationAngle": 0,
 			"velocity": 3,
 			"type": 0,
 			"emitEndTime": 4,

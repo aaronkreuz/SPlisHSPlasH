@@ -179,30 +179,33 @@ void TimeStepDFSPHbubbleOp::step()
 	// Non-pressure forces
 	//////////////////////////////////////////////////////////////////////////
 	// sim->computeNonPressureForces();
-	// INFO: stored in acceleration array of fluid-model
-	// note that neighbors and densities are already determined at this point
+
+	FluidModel* liquidModel = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0) : sim->getFluidModel(1);
+	FluidModel* airModel = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
 
 	//////////////////////////////////////////////////////////////////////////
-	// Viscosity XSPH
+	// Viscosity XSPH -> only liquid model
 	//////////////////////////////////////////////////////////////////////////
-	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
+	unsigned int nLiquidParticles = liquidModel->numActiveParticles();
 
-		// skip air -> viscosity not applied to air
-		if(fm->getId() == "Air"){
-			continue;
-		}
-
-		for (int i = 0; i < Simulation::getCurrent()->getFluidModel(fluidModelIndex)->numActiveParticles(); i++){
-			computeViscosityForce(fluidModelIndex, i, h);
+	#pragma omp parallel default(shared)
+	{
+	#pragma omp for schedule(static)
+		for(int i = 0; i < nLiquidParticles; i++){
+			computeViscosityForce(liquidModel->getPointSetIndex(), i, h);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// Surface Tension Force
+	// Surface Tension Force -> for liquid model
 	//////////////////////////////////////////////////////////////////////////
 	// for liquid phase
 	computeSurfaceTensionForce(1, h);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Compute onSurface state and lifetime updates for air particles
+	//////////////////////////////////////////////////////////////////////////
+	computeOnSurfaceAir();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Non-pressure Forces introduced by Bubble-paper
@@ -246,7 +249,7 @@ void TimeStepDFSPHbubbleOp::step()
 	STOP_TIMING_AVG;
 
 	//////////////////////////////////////////////////////////////////////////
-	// compute final positions + particle generation and deletion
+	// compute final positions
 	//////////////////////////////////////////////////////////////////////////
 	for (unsigned int m = 0; m < nModels; m++)
 	{
@@ -268,26 +271,39 @@ void TimeStepDFSPHbubbleOp::step()
 					const Vector3r &vi = fm->getVelocity(i);
 					xi += h * vi;
 				}
-
-				// test for air generation
-				if(m_enableTrappedAir && (fm->getId() == "Liquid")){
-					trappedAirIhmsen2011(m, i);
-				}
-
 			}
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// foam air particle deletion
+	// air particle generation
+	//////////////////////////////////////////////////////////////////////////
+	if(m_enableTrappedAir){
+		// loop over liquid particle
+		FluidModel* liquid = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0) : sim->getFluidModel(1);
+		const unsigned int liquidModelIndex = liquid->getPointSetIndex();
+		const unsigned int numLiquidParticles = liquid->numActiveParticles();
+
+		#pragma omp parallel default(shared)
+		{
+			#pragma omp for schedule(static)
+			for(unsigned int i = 0; i < numLiquidParticles; i++){
+				if(liquid->getParticleState(i) == ParticleState::Active){
+					trappedAirIhmsen2011(liquidModelIndex, i);
+				}
+			}
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// foam air particle deletion on surface
 	//////////////////////////////////////////////////////////////////////////
 	{
 		FluidModel* air = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
-		const unsigned int airModelIndex = air->getPointSetIndex();
 		const unsigned int numParticles = air->numActiveParticles();
-		unsigned int deletedParticles = 0;
+		// unsigned int deletedParticles = 0;
 		std::vector<unsigned int>& particlesForReuse = m_simulationData.getParticlesForReuse();
-		particlesForReuse.clear();
+		// particlesForReuse.clear();
 
 		#pragma omp parallel default(shared)
 		{
@@ -297,9 +313,10 @@ void TimeStepDFSPHbubbleOp::step()
 
 					air->getVelocity(i) *= static_cast<Real>(0.01);
 					air->getPosition(i) = Vector3r(1000 + i, 1000, 1000);
-					deletedParticles++;
+					//deletedParticles++;
 
-					m_simulationData.getParticlesForReuse().push_back(i);
+					// store particles for reuse
+					// m_simulationData.getParticlesForReuse().push_back(i);
 				}
 			}
 		}
@@ -323,8 +340,7 @@ void TimeStepDFSPHbubbleOp::step()
 void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i){
 	Simulation* sim = Simulation::getCurrent();
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
-	// liquid model -> naming convention
-	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+	FluidModel* model = sim->getFluidModel(fluidModelIndex); 	// liquid model -> naming convention
 	const unsigned int numLiqParticles = model->numActiveParticles();
 
 	if((airModel->numActiveParticles() >= airModel->numParticles()))
@@ -483,6 +499,71 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012()
 		// emit air particle
 		unsigned int emittedParticles = 0;
 		emitAirParticleFromVelocityField(emittedParticles, vi, xi);
+	}
+}
+
+// compute state of the air particles: on surface or inside liquid
+void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
+	Simulation *sim = Simulation::getCurrent();
+	FluidModel* model = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1); // air model
+	const unsigned int numParticles = model->numActiveParticles();
+	const unsigned int nFluids = sim->numberOfFluidModels();
+	const unsigned int fluidModelIndex = model->getPointSetIndex();
+	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
+	TimeManager* tm = TimeManager::getCurrent();
+	const Real h = tm->getTimeStepSize();
+
+	#pragma omp parallel default(shared)
+	{
+		#pragma omp for schedule(static)
+		for(int i = 0; i < numParticles; i++){
+			if(model->getParticleState(i) == ParticleState::Disabled){
+				continue;
+			}
+
+			const Real density_i = model->getDensity(i);
+			const Vector3r& xi = model->getPosition(i);
+
+			// This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
+			// if(density_i > m_onSurfaceThresholdDensity){
+			// 	m_onSurface[i] = 1;
+			// }
+
+			// look for number of liquid particle neighbors of the air particle
+			// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
+
+			volatile bool onSurface = true;
+			// looping over liquid neighbors
+			forall_fluid_neighbors_in_different_phase(
+				if(!onSurface){
+					continue;
+				}
+				if((xj-xi).dot(grav) < 0){
+					onSurface = false;
+				}
+			);
+
+			m_simulationData.getOnSurface(i) = onSurface;
+			Real& lifetime_i = m_simulationData.getLifetime(i);
+
+			// lifetime update
+			if(onSurface){
+				lifetime_i -= h;
+			}
+
+			// all particles of a bubble should disperse at once.
+			forall_fluid_neighbors_in_same_phase(
+				lifetime_i = std::min(lifetime_i, m_simulationData.getLifetime(neighborIndex));
+			);
+
+			// Disable an air particle at the end of its lifetime
+			if(lifetime_i <= 0.0){
+				model->setParticleState(i, ParticleState::Disabled);
+				// -> clean-up in TimeStep
+				// TODO: Clean-up can now take place here
+				m_simulationData.getOnSurface(i) = 0;
+			}
+		}
 	}
 }
 
@@ -954,8 +1035,6 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 	//////////////////////////////////////////////////////////////////////////
 	avg_density_err = density_error / numParticles;
 }
-
-
 
 void TimeStepDFSPHbubbleOp::reset()
 {
@@ -1792,21 +1871,25 @@ void TimeStepDFSPHbubbleOp::computeSurfaceTensionForce(const unsigned int fluidM
 		return;
 	}
 
-	for (int i = 0; i < numParticles; i++){
-		Vector3r& acceleration = model->getAcceleration(i);
-		const Real mi = model->getMass(i);
-		const Vector3r xi = model->getPosition(i);
+#pragma omp parallel default(shared)
+	{
+		#pragma omp for schedule(static)
+		for (int i = 0; i < numParticles; i++){
+			Vector3r& acceleration = model->getAcceleration(i);
+			const Real mi = model->getMass(i);
+			const Vector3r xi = model->getPosition(i);
 
-		Vector3r acc_surfaceTension = Vector3r::Zero();
+			Vector3r acc_surfaceTension = Vector3r::Zero();
 
-		forall_fluid_neighbors_in_same_phase(
-			const Real massj = model->getMass(neighborIndex);
-			const Vector3r xij = xi-xj;
+			forall_fluid_neighbors_in_same_phase(
+				const Real massj = model->getMass(neighborIndex);
+				const Vector3r xij = xi-xj;
 
-			acc_surfaceTension += massj * (xij) * sim->W(xij);
-			);
+				acc_surfaceTension += massj * (xij) * sim->W(xij);
+				);
 
-		acceleration -= (m_surfaceTensionConstant * acc_surfaceTension) * (static_cast<Real>(1.0)/mi);
+			acceleration -= (m_surfaceTensionConstant * acc_surfaceTension) * (static_cast<Real>(1.0)/mi);
+		}
 	}
 }
 
@@ -1832,15 +1915,10 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 	if ((airModel->numActiveParticles() < airModel->numParticles())) // || (reusedParticles.size() > 0))
 	{
 		airModel->getPosition(indexNotReuse) = pos;
-		airModel->getVelocity(indexNotReuse) = vel;
+		airModel->getVelocity(indexNotReuse) = 0.5f * vel;
 		airModel->setParticleState(indexNotReuse, ParticleState::Active);
 		// airModel->setObjectId(indexNotReuse, 1); //?
 		numEmittedParticles++;
-
-		// m_model->getPosition(index) = (i*diam + startX)*axisWidth + (j*diam + startZ)*axisHeight + offset;
-		// m_model->getVelocity(index) = emitVel;
-		// m_model->setParticleState(index, ParticleState::AnimatedByEmitter);
-		// m_model->setObjectId(index, m_objectId);
 	}
 
 	if (numEmittedParticles != 0)

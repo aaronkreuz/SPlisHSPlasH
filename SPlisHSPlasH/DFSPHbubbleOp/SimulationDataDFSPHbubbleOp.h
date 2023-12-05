@@ -1,4 +1,4 @@
-#ifndef __SimulationDataDFSPHbubbleOp_h__
+﻿#ifndef __SimulationDataDFSPHbubbleOp_h__
 #define __SimulationDataDFSPHbubbleOp_h__
 
 #include "SPlisHSPlasH/Common.h"
@@ -32,7 +32,10 @@ namespace SPH
 			std::vector<std::vector<Real>> m_pressure_rho2_V;
 			std::vector<std::vector<Vector3r>> m_pressureAccel;
 
+			// solely for air particles
 			std::vector<unsigned int> m_airParticlesForReuse;
+			std::vector<unsigned int> m_onSurfaceAir;
+			std::vector<Real> m_lifetimeAir;
 
 		public:
 
@@ -131,6 +134,36 @@ namespace SPH
 			FORCE_INLINE void setPressureAccel(const unsigned int fluidIndex, const unsigned int i, const Vector3r& val)
 			{
 				m_pressureAccel[fluidIndex][i] = val;
+			}
+
+			FORCE_INLINE unsigned int getOnSurface(const unsigned int i) const
+			{
+				return m_onSurfaceAir[i];
+			}
+
+			FORCE_INLINE unsigned int& getOnSurface(const unsigned int i)
+			{
+				return m_onSurfaceAir[i];
+			}
+
+			FORCE_INLINE void setOnSurface(const unsigned int i, const unsigned int val)
+			{
+				m_onSurfaceAir[i] = val;
+			}
+
+			FORCE_INLINE Real getLifetime(const unsigned int i) const
+			{
+				return m_lifetimeAir[i];
+			}
+
+			FORCE_INLINE Real& getLifetime(const unsigned int i)
+			{
+				return m_lifetimeAir[i];
+			}
+
+			FORCE_INLINE void setLifetime(const unsigned int i, const Real val)
+			{
+				m_lifetimeAir[i] = val;
 			}
 	};
 }
