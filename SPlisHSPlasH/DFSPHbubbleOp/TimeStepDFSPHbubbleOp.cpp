@@ -48,6 +48,16 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
+	// TODO: following leads to instant crash -> DEBUG
+	// if(sim->numberOfFluidModels() < 2){
+	// 	Vector3r pos[1] = {Vector3r(0,0,0)};
+	// 	Vector3r vel[1] = {Vector3r(0,0,0)};
+	// 	unsigned int oid[1] = {0};
+
+	// 	if(sim->getFluidModel(0)->getId() == "Liquid"){
+	// 		sim->addFluidModel("Air", 1, pos, vel, oid, 2000);
+	// 	}
+	// }
 	const unsigned int nModels = sim->numberOfFluidModels();
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
 	{
@@ -175,44 +185,77 @@ void TimeStepDFSPHbubbleOp::step()
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
 		clearAccelerations(fluidModelIndex);
 
+
+	//////////////////////////////////////////////////////////////////////////
+	// Track state of fluid models
+	//////////////////////////////////////////////////////////////////////////
+	int liquidModelIndex = -1;
+	int airModelIndex = -1;
+
+	if(nModels == 2){
+		liquidModelIndex = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0)->getPointSetIndex() : sim->getFluidModel(1)->getPointSetIndex();
+		airModelIndex = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0)->getPointSetIndex() : sim->getFluidModel(1)->getPointSetIndex();
+	}
+	else if(nModels == 1){
+		if(sim->getFluidModel(0)->getId() == "Liquid"){
+			liquidModelIndex = 0;
+		}
+		else{
+			airModelIndex = 0;
+		}
+	}
+	else{
+		LOG_ERR << "No or too many fluid-models not supported yet. Number fluid-models: " << nModels;
+		return;
+	}
+
+	unsigned int nLiquidParticles = 0;
+	if(liquidModelIndex > -1){
+		nLiquidParticles = sim->getFluidModel(liquidModelIndex)->numActiveParticles();
+	}
+
+	unsigned int nAirParticles = 0;
+	if(airModelIndex > -1){
+		nAirParticles = sim->getFluidModel(airModelIndex)->numActiveParticles();
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	// Non-pressure forces
 	//////////////////////////////////////////////////////////////////////////
 	// sim->computeNonPressureForces();
 
-	FluidModel* liquidModel = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0) : sim->getFluidModel(1);
-	FluidModel* airModel = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Viscosity XSPH -> only liquid model
-	//////////////////////////////////////////////////////////////////////////
-	unsigned int nLiquidParticles = liquidModel->numActiveParticles();
-
-	#pragma omp parallel default(shared)
-	{
-	#pragma omp for schedule(static)
-		for(int i = 0; i < nLiquidParticles; i++){
-			computeViscosityForce(liquidModel->getPointSetIndex(), i, h);
+	// liquid pase exclusive non-pressure forces
+	if(nLiquidParticles > 0){
+		//////////////////////////////////////////////////////////////////////////
+		// Viscosity XSPH -> only liquid model
+		//////////////////////////////////////////////////////////////////////////
+		#pragma omp parallel default(shared)
+		{
+		#pragma omp for schedule(static)
+			for(int i = 0; i < nLiquidParticles; i++){
+				computeViscosityForce(liquidModelIndex, i, h);
+			}
 		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Surface Tension Force -> for liquid model
+		//////////////////////////////////////////////////////////////////////////
+		computeSurfaceTensionForce(liquidModelIndex, h);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// Surface Tension Force -> for liquid model
+	// Non-pressure Forces introduced by Bubble-paper Ihmsen et al.
 	//////////////////////////////////////////////////////////////////////////
-	// for liquid phase
-	computeSurfaceTensionForce(1, h);
+	if(nLiquidParticles > 0){
+		sim->getFluidModel(liquidModelIndex)->computeBubbleForces();
+	}
+	if(nAirParticles > 0){
+		//////////////////////////////////////////////////////////////////////////
+		// Compute onSurface state and lifetime updates for air particles
+		//////////////////////////////////////////////////////////////////////////
+		computeOnSurfaceAir();
 
-	//////////////////////////////////////////////////////////////////////////
-	// Compute onSurface state and lifetime updates for air particles
-	//////////////////////////////////////////////////////////////////////////
-	computeOnSurfaceAir();
-
-	//////////////////////////////////////////////////////////////////////////
-	// Non-pressure Forces introduced by Bubble-paper
-	//////////////////////////////////////////////////////////////////////////
-	for (int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
-		FluidModel* fm = sim->getFluidModel(fluidModelIndex);
-		fm->computeBubbleForces();
+		sim->getFluidModel(airModelIndex)->computeBubbleForces();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -278,29 +321,34 @@ void TimeStepDFSPHbubbleOp::step()
 	//////////////////////////////////////////////////////////////////////////
 	// air particle generation
 	//////////////////////////////////////////////////////////////////////////
-	if(m_enableTrappedAir){
-		// loop over liquid particle
-		FluidModel* liquid = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0) : sim->getFluidModel(1);
-		const unsigned int liquidModelIndex = liquid->getPointSetIndex();
-		const unsigned int numLiquidParticles = liquid->numActiveParticles();
+	if(m_enableTrappedAir && nLiquidParticles > 0 && liquidModelIndex > -1){
+		FluidModel* liquid = sim->getFluidModel(liquidModelIndex);
 
-		#pragma omp parallel default(shared)
-		{
-			#pragma omp for schedule(static)
-			for(unsigned int i = 0; i < numLiquidParticles; i++){
-				if(liquid->getParticleState(i) == ParticleState::Active){
-					trappedAirIhmsen2011(liquidModelIndex, i);
-				}
+		// loop over liquid particle
+		unsigned int emittedParticles = 0;
+
+		for(unsigned int i = 0; i < nLiquidParticles; i++){
+			if(liquid->getParticleState(i) == ParticleState::Active){
+				trappedAirIhmsen2011(liquidModelIndex, i, emittedParticles);
 			}
 		}
+
+		if (emittedParticles != 0)
+		{
+			FluidModel* airModel = sim->getFluidModel(airModelIndex);
+			airModel->setNumActiveParticles(nAirParticles + emittedParticles);
+			sim->emittedParticles(airModel, airModel->numActiveParticles() - emittedParticles);
+			sim->getNeighborhoodSearch()->resize_point_set(airModel->getPointSetIndex(), &airModel->getPosition(0)[0], airModel->numActiveParticles());
+		}
+
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// foam air particle deletion on surface
 	//////////////////////////////////////////////////////////////////////////
+	if(nAirParticles > 0 && airModelIndex > -1)
 	{
-		FluidModel* air = sim->getFluidModel(0)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1);
-		const unsigned int numParticles = air->numActiveParticles();
+		FluidModel* air = sim->getFluidModel(airModelIndex);
 		// unsigned int deletedParticles = 0;
 		std::vector<unsigned int>& particlesForReuse = m_simulationData.getParticlesForReuse();
 		// particlesForReuse.clear();
@@ -308,7 +356,7 @@ void TimeStepDFSPHbubbleOp::step()
 		#pragma omp parallel default(shared)
 		{
 			#pragma omp for schedule(static)
-			for(int i = 0; i < numParticles; i++){
+			for(int i = 0; i < nAirParticles; i++){
 				if(air->getParticleState(i) == ParticleState::Disabled){
 
 					air->getVelocity(i) *= static_cast<Real>(0.01);
@@ -337,10 +385,10 @@ void TimeStepDFSPHbubbleOp::step()
 //////////////////////////////////////////////////////////////////////////
 // emit air particles based on the velocity field of the liquid -> Ihmsen et al. 2011
 //////////////////////////////////////////////////////////////////////////
-void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i){
+void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& emittedParticles){
 	Simulation* sim = Simulation::getCurrent();
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
-	FluidModel* model = sim->getFluidModel(fluidModelIndex); 	// liquid model -> naming convention
+	FluidModel* model = sim->getFluidModel(fluidModelIndex); 	// liquid model -> naming convention for makros
 	const unsigned int numLiqParticles = model->numActiveParticles();
 
 	if((airModel->numActiveParticles() >= airModel->numParticles()))
@@ -367,7 +415,7 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIn
 		}
 
 		const Vector3r xij = xi - xj;
-		if(xij.squaredNorm() < (2.0 * diam * diam)){
+		if(xij.squaredNorm() < (5.0 * diam * diam)){
 			isTooClose = true;
 		}
 	);
@@ -405,7 +453,6 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIn
 		return;
 
 	// emit air particle
-	unsigned int emittedParticles = 0;
 	emitAirParticleFromVelocityField(emittedParticles, vi, xi);
 }
 
@@ -1912,19 +1959,12 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 
 	unsigned int indexNotReuse = airModel->numActiveParticles();
 
-	if ((airModel->numActiveParticles() < airModel->numParticles())) // || (reusedParticles.size() > 0))
+	if (((airModel->numActiveParticles() + numEmittedParticles) < airModel->numParticles())) // || (reusedParticles.size() > 0))
 	{
 		airModel->getPosition(indexNotReuse) = pos;
 		airModel->getVelocity(indexNotReuse) = 0.5f * vel;
 		airModel->setParticleState(indexNotReuse, ParticleState::Active);
-		// airModel->setObjectId(indexNotReuse, 1); //?
+		airModel->setObjectId(indexNotReuse, 0); //?
 		numEmittedParticles++;
-	}
-
-	if (numEmittedParticles != 0)
-	{
-		airModel->setNumActiveParticles(airModel->numActiveParticles() + numEmittedParticles);
-		sim->emittedParticles(airModel, airModel->numActiveParticles() - numEmittedParticles);
-		sim->getNeighborhoodSearch()->resize_point_set(airModel->getPointSetIndex(), &airModel->getPosition(0)[0], airModel->numActiveParticles());
 	}
 }
