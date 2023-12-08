@@ -40,7 +40,7 @@
 		},
         {
             "id": "Air",
-            "maxEmitterParticles": 2000,
+            "maxEmitterParticles": 1300,
 			"emitterReuseParticles": false,
             "emitterBoxMin": [-2.0,-2.5,-2.0],
 			"emitterBoxMax": [1.0,4,2.0],

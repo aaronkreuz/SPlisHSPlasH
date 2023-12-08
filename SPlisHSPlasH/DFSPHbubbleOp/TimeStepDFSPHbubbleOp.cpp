@@ -319,7 +319,7 @@ void TimeStepDFSPHbubbleOp::step()
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// air particle generation
+	// air particle generation: Trapped Air
 	//////////////////////////////////////////////////////////////////////////
 	if(m_enableTrappedAir && nLiquidParticles > 0 && liquidModelIndex > -1){
 		FluidModel* liquid = sim->getFluidModel(liquidModelIndex);
@@ -328,7 +328,7 @@ void TimeStepDFSPHbubbleOp::step()
 		unsigned int emittedParticles = 0;
 
 		for(unsigned int i = 0; i < nLiquidParticles; i++){
-			if(liquid->getParticleState(i) == ParticleState::Active){
+			if(emittedParticles < 5 && liquid->getParticleState(i) == ParticleState::Active){
 				trappedAirIhmsen2011(liquidModelIndex, i, emittedParticles);
 			}
 		}
@@ -338,37 +338,38 @@ void TimeStepDFSPHbubbleOp::step()
 			FluidModel* airModel = sim->getFluidModel(airModelIndex);
 			airModel->setNumActiveParticles(nAirParticles + emittedParticles);
 			sim->emittedParticles(airModel, airModel->numActiveParticles() - emittedParticles);
-			sim->getNeighborhoodSearch()->resize_point_set(airModel->getPointSetIndex(), &airModel->getPosition(0)[0], airModel->numActiveParticles());
+			sim->getNeighborhoodSearch()->resize_point_set(airModelIndex, &airModel->getPosition(0)[0], airModel->numActiveParticles());
 		}
 
 	}
 
+	// TODO: Fix particle deletion
 	//////////////////////////////////////////////////////////////////////////
 	// foam air particle deletion on surface
 	//////////////////////////////////////////////////////////////////////////
-	if(nAirParticles > 0 && airModelIndex > -1)
-	{
-		FluidModel* air = sim->getFluidModel(airModelIndex);
-		// unsigned int deletedParticles = 0;
-		std::vector<unsigned int>& particlesForReuse = m_simulationData.getParticlesForReuse();
-		// particlesForReuse.clear();
+	// if(nAirParticles > 0 && airModelIndex > -1)
+	// {
+	// 	FluidModel* air = sim->getFluidModel(airModelIndex);
+	// 	// unsigned int deletedParticles = 0;
+	// 	std::vector<unsigned int>& particlesForReuse = m_simulationData.getParticlesForReuse();
+	// 	// particlesForReuse.clear();
 
-		#pragma omp parallel default(shared)
-		{
-			#pragma omp for schedule(static)
-			for(int i = 0; i < nAirParticles; i++){
-				if(air->getParticleState(i) == ParticleState::Disabled){
+	// 	#pragma omp parallel default(shared)
+	// 	{
+	// 		#pragma omp for schedule(static)
+	// 		for(int i = 0; i < nAirParticles; i++){
+	// 			if(air->getParticleState(i) == ParticleState::Disabled){
 
-					air->getVelocity(i) *= static_cast<Real>(0.01);
-					air->getPosition(i) = Vector3r(1000 + i, 1000, 1000);
-					//deletedParticles++;
+	// 				air->getVelocity(i) *= static_cast<Real>(0.01);
+	// 				air->getPosition(i) = Vector3r(1000 + i, 1000, 1000);
+	// 				//deletedParticles++;
 
-					// store particles for reuse
-					// m_simulationData.getParticlesForReuse().push_back(i);
-				}
-			}
-		}
-	}
+	// 				// store particles for reuse
+	// 				// m_simulationData.getParticlesForReuse().push_back(i);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	//////////////////////////////////////////////////////////////////////////
 	// emit new particles and perform an animation field step
@@ -603,13 +604,14 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 				lifetime_i = std::min(lifetime_i, m_simulationData.getLifetime(neighborIndex));
 			);
 
+			// TODO: Fix particle "deletion"
 			// Disable an air particle at the end of its lifetime
-			if(lifetime_i <= 0.0){
-				model->setParticleState(i, ParticleState::Disabled);
-				// -> clean-up in TimeStep
-				// TODO: Clean-up can now take place here
-				m_simulationData.getOnSurface(i) = 0;
-			}
+			// if(lifetime_i <= 0.0){
+			// 	model->setParticleState(i, ParticleState::Disabled);
+			// 	// -> clean-up in TimeStep
+			// 	// TODO: Clean-up can now take place here
+			// 	m_simulationData.getOnSurface(i) = 0;
+			// }
 		}
 	}
 }
@@ -790,8 +792,8 @@ void TimeStepDFSPHbubbleOp::divergenceSolve()
 				densityAdv = max(densityAdv, static_cast<Real>(0.0));
 
 				unsigned int numNeighbors = 0;
-				for (unsigned int pid = 0; pid < sim->numberOfPointSets(); pid++)
-					numNeighbors += sim->numberOfNeighbors(fluidModelIndex, pid, i);
+				// only consider neighbors of the own phase
+				numNeighbors += sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
 
 				// in case of particle deficiency do not perform a divergence solve
 				if (!sim->is2DSimulation())
@@ -1052,8 +1054,8 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 			Real residuum = min(s_i - aij_pj, static_cast<Real>(0.0));     // r = b - A*p
 
 			unsigned int numNeighbors = 0;
-			for (unsigned int pid = 0; pid < sim->numberOfPointSets(); pid++)
-				numNeighbors += sim->numberOfNeighbors(fluidModelIndex, pid, i);
+			// only consider neighbors of same phase here
+			numNeighbors += sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
 
 			// in case of particle deficiency do not perform a divergence solve
 			if (!sim->is2DSimulation())
@@ -1943,7 +1945,7 @@ void TimeStepDFSPHbubbleOp::computeSurfaceTensionForce(const unsigned int fluidM
 
 // #endif
 
-// Ihmsen et al:
+// emits one particle with the given position and velocity direction
 void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos)//(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos)
 {
 	// Explanation: TODO
@@ -1957,12 +1959,12 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 	FluidModel* liquidModel = sim->getFluidModel(0)->getId() == "Liquid" ? sim->getFluidModel(0) : sim->getFluidModel(1);
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
 
-	unsigned int indexNotReuse = airModel->numActiveParticles();
+	unsigned int indexNotReuse = airModel->numActiveParticles() + numEmittedParticles;
 
 	if (((airModel->numActiveParticles() + numEmittedParticles) < airModel->numParticles())) // || (reusedParticles.size() > 0))
 	{
 		airModel->getPosition(indexNotReuse) = pos;
-		airModel->getVelocity(indexNotReuse) = 0.5f * vel;
+		airModel->getVelocity(indexNotReuse) = Vector3r(0.0, 0.0, 0.0);
 		airModel->setParticleState(indexNotReuse, ParticleState::Active);
 		airModel->setObjectId(indexNotReuse, 0); //?
 		numEmittedParticles++;

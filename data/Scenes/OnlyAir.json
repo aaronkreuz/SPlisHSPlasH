@@ -24,10 +24,8 @@
 
     "Materials": [
 		{
-			"id": "Liquid",
+			"id": "Air",
 			"surfaceTension": 0.2,
-            "maxEmitterParticles": 10000,
-			"emitterReuseParticles": false,
 			"surfaceTensionMethod": 0,		
 			"viscosity": 0.01,
 			"viscosityMethod": 1, 
@@ -38,36 +36,18 @@
 			"colorMapType": 0,
             "density0": 1000.0,
             "bubbleMethod": 1,
-            "renderModel": true
+            "renderModel": false
 		},
         {
-            "id": "Air",
-            "maxEmitterParticles": 1000,
-			"emitterReuseParticles": false,
-            "emitterBoxMin": [-2.0,-2.5,-2.0],
-			"emitterBoxMax": [1.0,4,2.0],
+            "id": "Liquid",
             "colorMapType": 0,
             "density0": 1.4,
             "viscosityMethod": 0,
             "bubbleMethod": 1,
             "surfaceTensionMethod": 4,
-            "surfaceTension": 50.0,
+            "surfaceTension": 100.0,
             "renderModel": true
         }
-    ],
-
-    "Emitters": [
-		{
-			"width": 5, 
-			"height": 5, 
-			"translation": [-1.2,2.0,0.0],
-			"rotationAxis": [0, 0, 1],
-			"rotationAngle": 0,
-			"velocity": 3,
-			"type": 0,
-			"emitEndTime": 4,
-            "id": "Liquid"
-		}
     ],
 
     "RigidBodies": [
@@ -91,17 +71,9 @@
             "id": "Liquid",
 			"denseMode": 0,
 			"start": [-2.0, 0.0, -1.0],
-			"end": [2.0, 1.0, 1.0],
+			"end": [2.0, 2.0, 1.0],
 			"translation": [0.0, 0.025, 0.0],
 			"scale": [1, 1, 1]
-		},
-		{
-            "id": "Air",
-            "denseMode": 0,
-            "start": [-0.25, 0.0, -1],
-            "end": [0.25, 0.5, 1],
-            "translation": [0.025, 0.025, 0.0],
-            "scale": [1, 1, 1]
-        }
+		}
 	]	
 }

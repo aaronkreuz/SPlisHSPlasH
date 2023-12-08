@@ -252,7 +252,6 @@ void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
 
 	// TODO: Better solution?
 	TimeStepDFSPHbubbleOp* timeStep = (TimeStepDFSPHbubbleOp*)sim->getTimeStep();
-	// computeOnSurface(); // Moved to simulationData
 
 	#pragma omp parallel default(shared)
 	{

@@ -123,7 +123,6 @@ void SimulationDataDFSPHbubbleOp::emittedParticles(FluidModel *model, const unsi
 {
 	Simulation* sim = Simulation::getCurrent();
 
-	// initialize kappa values for new particles
 	const unsigned int fluidModelIndex = model->getPointSetIndex();
 	for (unsigned int j = startIndex; j < model->numActiveParticles(); j++)
 	{
