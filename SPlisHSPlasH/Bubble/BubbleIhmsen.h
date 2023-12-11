@@ -33,8 +33,9 @@ namespace SPH
 		void computeCohesionIhmsenKernel(FluidModel* model);
 		void computeCohesionAkinci2013(FluidModel* model);
 		void computeNormals(void);
-		// void computeOnSurface(void);
-		void computeBouyancyIhmsen(FluidModel* model);
+
+		void computeBuoyancyIhmsen(FluidModel* model);
+
 		void computeDragIhmsen(FluidModel* model);
 
 		virtual void initParameters();

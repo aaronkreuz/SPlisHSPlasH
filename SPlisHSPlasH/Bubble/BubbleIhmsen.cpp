@@ -139,7 +139,7 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	//////////////////////////////////////////////////////////////////////////
 	if(m_buoyancyForce == ENUM_BUOYANCY_FORCE_IHMSEN)
 	{
-		computeBouyancyIhmsen(model);
+		computeBuoyancyIhmsen(model);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -244,7 +244,7 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 }
 
 // Standard method used in BUBBLE-paper
-void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
+void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 	Simulation* sim = Simulation::getCurrent();
 	const unsigned int fluidModelIndex = model->getPointSetIndex();
 	unsigned int numParticles = model->numActiveParticles();
@@ -276,6 +276,7 @@ void BubbleIhmsen::computeBouyancyIhmsen(FluidModel* model){
 		}
 	}
 }
+
 
 // Standard method used in BUBBLE-paper
 void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
