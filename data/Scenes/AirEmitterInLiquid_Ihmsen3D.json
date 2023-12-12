@@ -2,7 +2,6 @@
     "Configuration":
     {
         "pause": true,
-        "sim2D": true,
         "particleRadius": 0.025,
         "colorMapType": 1,
         "numberOfStepsPerRenderUpdate": 4,
@@ -36,7 +35,7 @@
 			"colorMapType": 0,
             "density0": 1000.0,
             "bubbleMethod": 1,
-            "renderModel": true,
+            "renderModel": false,
             "dragConstantLiq": 200.0
 		},
         {
@@ -51,7 +50,7 @@
             "bubbleMethod": 1,
             "surfaceTensionMethod": 4,
             "surfaceTensionXSPH": 10.0,
-            "surfaceTension": 100.0,
+            "surfaceTension": 30.0,
             "renderModel": true
         }
     ],
@@ -61,8 +60,8 @@
 			"width": 4, 
 			"height": 2, 
 			"translation": [0,-0.1,0.0],
-			"rotationAxis": [0, 1, 0],
-			"rotationAngle": 1.5707963267948966,
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 1.57,
 			"velocity": 2,
 			"type": 0,
 			"emitEndTime": 1.0,
@@ -73,16 +72,16 @@
     "RigidBodies": [
 		{
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,1.5,0],
+			"translation": [0,2.0,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [4, 3, 1],
+			"scale": [4, 4, 4],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
 			"mapInvert": true, 
 			"mapThickness": 0.0,
-			"mapResolution": [30,30,20]
+			"mapResolution": [30,30,30]
 		}
 	],
 
@@ -90,9 +89,9 @@
 		{
             "id": "Liquid",
 			"denseMode": 0,
-			"start": [-2.0, 0.0, -1.0],
-			"end": [2.0, 2.5, 1.0],
-			"translation": [0.0, 0.025, 0.0],
+			"start": [-2.0, 0.0, -2.0],
+			"end": [2.0, 2.5, 2.0],
+			"translation": [0.0, 0.005, 0.0],
 			"scale": [1, 1, 1]
 		}
 	]	
