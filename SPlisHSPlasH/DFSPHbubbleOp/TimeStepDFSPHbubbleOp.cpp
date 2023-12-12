@@ -792,8 +792,8 @@ void TimeStepDFSPHbubbleOp::divergenceSolve()
 				densityAdv = max(densityAdv, static_cast<Real>(0.0));
 
 				unsigned int numNeighbors = 0;
-				for (unsigned int pid = 0; pid < sim->numberOfPointSets(); pid++)
-					numNeighbors += sim->numberOfNeighbors(fluidModelIndex, pid, i);
+				// only consider neighbors of the own phase
+				numNeighbors += sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
 
 				// in case of particle deficiency do not perform a divergence solve
 				if (!sim->is2DSimulation())
@@ -1054,8 +1054,8 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 			Real residuum = min(s_i - aij_pj, static_cast<Real>(0.0));     // r = b - A*p
 
 			unsigned int numNeighbors = 0;
-			for (unsigned int pid = 0; pid < sim->numberOfPointSets(); pid++)
-				numNeighbors += sim->numberOfNeighbors(fluidModelIndex, pid, i);
+			// only consider neighbors of same phase here
+			numNeighbors += sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
 
 			// in case of particle deficiency do not perform a divergence solve
 			if (!sim->is2DSimulation())

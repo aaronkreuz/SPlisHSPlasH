@@ -26,7 +26,7 @@
 		{
 			"id": "Liquid",
 			"surfaceTension": 0.2,
-			"surfaceTensionMethod": 0,		
+			"surfaceTensionMethod": 0,
 			"viscosity": 0.01,
 			"viscosityMethod": 1, 
 			"vorticityMethod": 1, 
@@ -49,6 +49,7 @@
             "viscosityMethod": 0,
             "bubbleMethod": 1,
             "surfaceTensionMethod": 4,
+            "surfaceTensionXSPH": 10.0,
             "surfaceTension": 100.0,
             "renderModel": true
         }
