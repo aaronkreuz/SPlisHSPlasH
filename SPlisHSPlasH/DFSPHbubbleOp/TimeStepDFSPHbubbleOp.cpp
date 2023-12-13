@@ -304,10 +304,6 @@ void TimeStepDFSPHbubbleOp::step()
 			#pragma omp for schedule(static)
 			for (int i = 0; i < ((int)numParticles - deletedParticles); i++)
 			{
-				if(fm->getParticleState(i) == ParticleState::Disabled){
-					continue;
-				}
-
 				if (fm->getParticleState(i) == ParticleState::Active)
 				{
 					Vector3r &xi = fm->getPosition(i);
@@ -318,6 +314,7 @@ void TimeStepDFSPHbubbleOp::step()
 		}
 	}
 
+
 	//////////////////////////////////////////////////////////////////////////
 	// air particle generation: Trapped Air
 	//////////////////////////////////////////////////////////////////////////
@@ -326,10 +323,12 @@ void TimeStepDFSPHbubbleOp::step()
 
 		// loop over liquid particle
 		unsigned int emittedParticles = 0;
+		std::vector<unsigned int> indicesGen;
+		indicesGen.clear();
 
 		for(unsigned int i = 0; i < nLiquidParticles; i++){
 			if(emittedParticles < 5 && liquid->getParticleState(i) == ParticleState::Active){
-				trappedAirIhmsen2011(liquidModelIndex, i, emittedParticles);
+				trappedAirIhmsen2011(liquidModelIndex, i, emittedParticles, indicesGen);
 			}
 		}
 
@@ -343,6 +342,7 @@ void TimeStepDFSPHbubbleOp::step()
 
 	}
 
+	// MOVED TO ONSURFACE FUNCTION
 	// TODO: Fix particle deletion
 	//////////////////////////////////////////////////////////////////////////
 	// foam air particle deletion on surface
@@ -386,7 +386,7 @@ void TimeStepDFSPHbubbleOp::step()
 //////////////////////////////////////////////////////////////////////////
 // emit air particles based on the velocity field of the liquid -> Ihmsen et al. 2011
 //////////////////////////////////////////////////////////////////////////
-void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& emittedParticles){
+void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen){
 	Simulation* sim = Simulation::getCurrent();
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
 	FluidModel* model = sim->getFluidModel(fluidModelIndex); 	// liquid model -> naming convention for makros
@@ -404,27 +404,38 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIn
 
 	//////////////////////////////////////////////////////////////////////////
 	// extension AK: check if there is any air particle too close to the current liquid particle
-	const Real radius = sim->getParticleRadius();
-	const Real diam = 2 * radius;
-	const unsigned int nFluids = sim->numberOfFluidModels();
+	// const Real radius = sim->getParticleRadius();
+	// const Real diam = 2 * radius;
+	// const unsigned int nFluids = sim->numberOfFluidModels();
 
-	volatile bool isTooClose = false;
-	// loop over all air particles in this specific case
-	forall_fluid_neighbors_in_different_phase(
-		if(isTooClose){
-			continue;
-		}
+	// volatile bool isTooClose = false;
+	// // loop over all air particles in this specific case
+	// forall_fluid_neighbors_in_different_phase(
+	// 	if(isTooClose){
+	// 		continue;
+	// 	}
 
-		const Vector3r xij = xi - xj;
-		if(xij.squaredNorm() < (5.0 * diam * diam)){
-			isTooClose = true;
-		}
-	);
+	// 	const Vector3r xij = xi - xj;
+	// 	if(xij.squaredNorm() < (5.0 * diam * diam)){
+	// 		isTooClose = true;
+	// 	}
+	// );
 
-	if(isTooClose){
-		// neighbor air particle too close -> skip this liquid particle
-		return;
-	}
+	// for (unsigned int j : indicesGen){
+	// 	if(isTooClose){
+	// 		continue;
+	// 	}
+
+	// 	const Vector3r xij = xi - model->getPosition(j);
+	// 	if(xij.squaredNorm() < (5.0 * diam)){
+	// 		isTooClose = true;
+	// 	}
+	// }
+
+	// if(isTooClose){
+	// 	// neighbor air particle too close -> skip this liquid particle
+	// 	return;
+	// }
 	//////////////////////////////////////////////////////////////////////////
 
 	// compute v_diff
@@ -437,7 +448,7 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIn
 		const Vector3r v_ij = vi - vj;
 
 		v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
-		);
+	);
 
 	v_diff *= model->getMass(i);
 	Real vDiffNorm = v_diff.norm();
@@ -455,6 +466,7 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int fluidModelIn
 
 	// emit air particle
 	emitAirParticleFromVelocityField(emittedParticles, vi, xi);
+	indicesGen.push_back(i);
 }
 
 
@@ -561,10 +573,12 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 	TimeManager* tm = TimeManager::getCurrent();
 	const Real h = tm->getTimeStepSize();
 
+	// compute onSurface flag and updates of lifetime (multithreaded)
 	#pragma omp parallel default(shared)
 	{
 		#pragma omp for schedule(static)
-		for(int i = 0; i < numParticles; i++){
+		for(int i = 0; i < numParticles; i++)
+		{
 			if(model->getParticleState(i) == ParticleState::Disabled){
 				continue;
 			}
@@ -598,22 +612,35 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			if(onSurface){
 				lifetime_i -= h;
 			}
-
-			// all particles of a bubble should disperse at once.
-			forall_fluid_neighbors_in_same_phase(
-				lifetime_i = std::min(lifetime_i, m_simulationData.getLifetime(neighborIndex));
-			);
-
-			// TODO: Fix particle "deletion"
-			// Disable an air particle at the end of its lifetime
-			// if(lifetime_i <= 0.0){
-			// 	model->setParticleState(i, ParticleState::Disabled);
-			// 	// -> clean-up in TimeStep
-			// 	// TODO: Clean-up can now take place here
-			// 	m_simulationData.getOnSurface(i) = 0;
-			// }
 		}
 	}
+
+	// foam deletion check
+	for(int i = 0; i < numParticles; i++){
+		if(model->getParticleState(i) == ParticleState::Disabled){
+			continue;
+		}
+
+		Real& lifetime_i = m_simulationData.getLifetime(i);
+
+		// all particles of a bubble should disperse at once.
+		forall_fluid_neighbors_in_same_phase(
+			lifetime_i = std::min(lifetime_i, m_simulationData.getLifetime(neighborIndex));
+		);
+
+		// Disable an air particle at the end of its lifetime
+		if(lifetime_i <= 0.0){
+			model->getVelocity(i) = Vector3r::Zero(); // prevent that velocity influences the CFL condition
+			model->getPosition(i) = Vector3r(1000 + i, 1000, 1000);
+
+			model->setParticleState(i, ParticleState::Disabled);
+			// -> clean-up in TimeStep
+			// TODO: Clean-up can now take place here
+			m_simulationData.setLifetime(i, 3.0);
+			m_simulationData.getOnSurface(i) = 0;
+		}
+	}
+
 }
 
 void TimeStepDFSPHbubbleOp::pressureSolve()
@@ -1964,7 +1991,7 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 	if (((airModel->numActiveParticles() + numEmittedParticles) < airModel->numParticles())) // || (reusedParticles.size() > 0))
 	{
 		airModel->getPosition(indexNotReuse) = pos;
-		airModel->getVelocity(indexNotReuse) = Vector3r(0.0, 0.0, 0.0);
+		airModel->getVelocity(indexNotReuse) = vel;
 		airModel->setParticleState(indexNotReuse, ParticleState::Active);
 		airModel->setObjectId(indexNotReuse, 0); //?
 		numEmittedParticles++;

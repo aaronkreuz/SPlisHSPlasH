@@ -73,7 +73,7 @@ namespace SPH
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 
 		void computeOnSurfaceAir();
-		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles);
+		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirIhmsen2012();
 
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos);
