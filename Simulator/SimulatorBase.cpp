@@ -1447,7 +1447,6 @@ void SimulatorBase::createFluidBlocks(std::map<std::string, unsigned int> &fluid
 
 		Vector3r start = minX + static_cast<Real>(2.0)*scene.particleRadius*Vector3r::Ones();
 		const unsigned int startIndex = (unsigned int)fluidParticles[fluidIndex].size();
-		const unsigned int numAddedParticles = stepsX * stepsY * stepsZ;
 
 		if ((stepsX <= 1) || (stepsY <= 1) || (stepsZ <= 1))
 		{
@@ -1455,15 +1454,16 @@ void SimulatorBase::createFluidBlocks(std::map<std::string, unsigned int> &fluid
 			continue;
 		}
 
-		fluidParticles[fluidIndex].reserve(fluidParticles[fluidIndex].size() + numAddedParticles);
-		fluidVelocities[fluidIndex].resize(fluidVelocities[fluidIndex].size() + numAddedParticles);
-		fluidObjectIds[fluidIndex].reserve(fluidObjectIds[fluidIndex].size() + numAddedParticles);
-
 		if (Simulation::getCurrent()->is2DSimulation())
 		{
 			stepsZ = 1;
 			start[2] = 0.0;
 		}
+		const unsigned int numAddedParticles = stepsX * stepsY * stepsZ;
+
+		fluidParticles[fluidIndex].reserve(fluidParticles[fluidIndex].size() + numAddedParticles);
+		fluidVelocities[fluidIndex].resize(fluidVelocities[fluidIndex].size() + numAddedParticles, Vector3r::Zero());
+		fluidObjectIds[fluidIndex].reserve(fluidObjectIds[fluidIndex].size() + numAddedParticles);
 
 		for (int j = 0; j < stepsX; j++)
 		{

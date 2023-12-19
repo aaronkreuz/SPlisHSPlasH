@@ -23,13 +23,6 @@ int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VMIN_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VT_TRAPPED_AIR = -1;
 
-int TimeStepDFSPHbubbleOp::DRAG_COEFFICIENT_AIR = -1;
-int TimeStepDFSPHbubbleOp::DRAG_COEFFICIENT_LIQ = -1;
-
-int TimeStepDFSPHbubbleOp::COHESION_FORCE_TYPE = -1;
-int TimeStepDFSPHbubbleOp::ENUM_COHESION_FORCE_NONE = -1;
-int TimeStepDFSPHbubbleOp::ENUM_COHESION_FORCE_IHMSEN = -1;
-int TimeStepDFSPHbubbleOp::ENUM_COHESION_FORCE_SURFACE_TENSION = -1;
 
 
 TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
@@ -48,16 +41,6 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
-	// TODO: following leads to instant crash -> DEBUG
-	// if(sim->numberOfFluidModels() < 2){
-	// 	Vector3r pos[1] = {Vector3r(0,0,0)};
-	// 	Vector3r vel[1] = {Vector3r(0,0,0)};
-	// 	unsigned int oid[1] = {0};
-
-	// 	if(sim->getFluidModel(0)->getId() == "Liquid"){
-	// 		sim->addFluidModel("Air", 1, pos, vel, oid, 2000);
-	// 	}
-	// }
 	const unsigned int nModels = sim->numberOfFluidModels();
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
 	{
@@ -67,6 +50,10 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 		model->addField({ "p / rho^2", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressureRho2(fluidModelIndex, i); }, true });
 		model->addField({ "p_v / rho^2", FieldType::Scalar, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressureRho2_V(fluidModelIndex, i); }, true });
 		model->addField({ "pressure acceleration", FieldType::Vector3, [this, fluidModelIndex](const unsigned int i) -> Real* { return &m_simulationData.getPressureAccel(fluidModelIndex, i)[0]; } });
+
+		if (model->getId() == "Air")
+			model->addField({ "lifetime", FieldType::Scalar, [this](const unsigned int i) -> Real* { return &m_simulationData.getLifetime(i); } });
+
 	}
 }
 
@@ -83,6 +70,9 @@ TimeStepDFSPHbubbleOp::~TimeStepDFSPHbubbleOp(void)
 		model->removeFieldByName("p / rho^2");
 		model->removeFieldByName("p_v / rho^2");
 		model->removeFieldByName("pressure acceleration");
+
+		if (model->getId() == "Air")
+			model->removeFieldByName("lifetime");
 	}
 }
 

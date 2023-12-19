@@ -44,8 +44,6 @@ namespace SPH
 		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011
 		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
 
-		int m_cohesionForce;
-
 		//////////////////////////////////////////////////////////////////////////
 		// Forces
 		//////////////////////////////////////////////////////////////////////////
@@ -95,19 +93,14 @@ namespace SPH
 		static int VMIN_TRAPPED_AIR;
 		static int VT_TRAPPED_AIR;
 
-		static int DRAG_COEFFICIENT_AIR;
-		static int DRAG_COEFFICIENT_LIQ;
-
-		static int COHESION_FORCE_TYPE;
-		static int ENUM_COHESION_FORCE_NONE;
-		static int ENUM_COHESION_FORCE_IHMSEN;
-		static int ENUM_COHESION_FORCE_SURFACE_TENSION;
-
 		TimeStepDFSPHbubbleOp();
 		virtual ~TimeStepDFSPHbubbleOp(void);
 
 		FORCE_INLINE unsigned int getOnSurface(const unsigned int i) const {
 			return m_simulationData.getOnSurface(i);
+		}
+		FORCE_INLINE void setOnSurface(const unsigned int i, const unsigned int val) {
+			m_simulationData.setOnSurface(i, val);
 		}
 
 		/** perform a simulation step */
