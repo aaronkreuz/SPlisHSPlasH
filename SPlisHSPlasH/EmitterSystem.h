@@ -27,6 +27,12 @@ namespace SPH
 			std::vector <unsigned int> m_reusedParticles;
 			std::vector<Emitter*> m_emitters;
 
+			//////////////////////////////////////////////////////////////////////////
+			// trapped Air Bubble Approach
+			std::vector<Vector3r> m_airParticles;
+			std::vector<Vector3r> m_airVelocities;
+			//////////////////////////////////////////////////////////////////////////
+
 			void reuseParticles();
 
 		public:
@@ -39,11 +45,20 @@ namespace SPH
 			unsigned int numEmitters() const { return static_cast<unsigned int>(m_emitters.size()); }
 			std::vector<Emitter*> &getEmitters() { return m_emitters; }
 
+			//////////////////////////////////////////////////////////////////////////
+			// trapped Air Bubble Approach
+			std::vector<Vector3r> &getAirParticles() { return m_airParticles; }
+			std::vector<Vector3r> &getAirVelocities() { return m_airVelocities; }
+
+			void trappedAir(std::vector<Vector3r>& pos, std::vector<Vector3r>& vel);
+			//////////////////////////////////////////////////////////////////////////
+
 			unsigned int numReusedParticles() const { return m_numReusedParticles; }
 			unsigned int numEmittedParticles() const { return m_numberOfEmittedParticles; }
 
 			void step();
 			void reset();
+			void setEmitterAirParticleData(std::vector<Vector3r>& pos, std::vector<Vector3r>& vel);
 
 			void saveState(BinaryFileWriter &binWriter);
 			void loadState(BinaryFileReader &binReader);

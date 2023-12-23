@@ -309,7 +309,7 @@ void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
 			// Note: Does only work for Bubble framework if there is only one liquid and one gas!
 			// So the Makro will only loop over the Air-phase for liquid particles and vice versa.
 			forall_fluid_neighbors_in_different_phase(
-				if(model->getParticleState(neighborIndex) == ParticleState::Disabled){
+				if(fm_neighbor->getParticleState(neighborIndex) == ParticleState::Disabled){
 					continue;
 				}
 

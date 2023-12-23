@@ -41,8 +41,12 @@ namespace SPH
 		Real m_minBouyancy = static_cast<Real>(2.4);
 		const Real m_cohesionConstant = static_cast<Real>(12.0);
 		const Real m_surfaceTensionConstant = static_cast<Real>(1.0);
+
+		// Trapped air
 		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011
 		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
+		Real m_nextEmitTime = static_cast<Real>(0.0);
+
 
 		//////////////////////////////////////////////////////////////////////////
 		// Forces
@@ -74,7 +78,7 @@ namespace SPH
 		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirIhmsen2012();
 
-		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, const Vector3r& vel, const Vector3r& pos);
+		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, Vector3r vel, Vector3r pos);
 
 		/** Perform the neighborhood search for all fluid particles.
 		*/

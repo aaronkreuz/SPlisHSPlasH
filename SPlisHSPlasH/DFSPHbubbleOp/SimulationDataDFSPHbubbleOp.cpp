@@ -11,7 +11,9 @@ SimulationDataDFSPHbubbleOp::SimulationDataDFSPHbubbleOp() :
 	m_pressureAccel(),
 	m_density_adv(),
 	m_onSurfaceAir(),
-	m_lifetimeAir()
+	m_lifetimeAir(),
+	m_posAirParticles(),
+	m_velAirParticles()
 {
 }
 
@@ -43,7 +45,7 @@ void SimulationDataDFSPHbubbleOp::init()
 
 		if(sim->getFluidModel(i)->getId() == "Air"){
 			m_onSurfaceAir.resize(fm->numParticles(), 0);
-			m_lifetimeAir.resize(fm->numParticles(), 2.0f); // in paper: 0.7 sec.
+			m_lifetimeAir.resize(fm->numParticles(), 5.0f); // in paper: 0.7 sec.
 		}
 	}
 }
@@ -68,6 +70,8 @@ void SimulationDataDFSPHbubbleOp::cleanup()
 	m_pressureAccel.clear();
 	m_onSurfaceAir.clear();
 	m_lifetimeAir.clear();
+	m_posAirParticles.clear();
+	m_velAirParticles.clear();
 }
 
 void SimulationDataDFSPHbubbleOp::reset()
@@ -88,7 +92,7 @@ void SimulationDataDFSPHbubbleOp::reset()
 
 			if(sim->getFluidModel(i)->getId() == "Air"){
 				m_onSurfaceAir[j] = 0;
-				m_lifetimeAir[j] = 2.0f;
+				m_lifetimeAir[j] = 5.0f;
 			}
 		}
 	}
@@ -128,8 +132,8 @@ void SimulationDataDFSPHbubbleOp::emittedParticles(FluidModel *model, const unsi
 	{
 		m_pressure_rho2[fluidModelIndex][j] = 0.0;
 		m_pressure_rho2_V[fluidModelIndex][j] = 0.0;
-		if (sim->getFluidModel(fluidModelIndex)->getId() == "Air"){
-			m_lifetimeAir[j] = 2.0f;
+		if (model->getId() == "Air"){
+			m_lifetimeAir[j] = 5.0f;
 		}
 	}
 }

@@ -395,7 +395,7 @@ void Simulation::setKernel(int val)
 			m_kernelFct = WendlandQuinticC2Kernel2D::W;
 		}
 	}
-	if (getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+		if (getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
 		updateBoundaryVolume();
 }
 
@@ -718,6 +718,12 @@ void Simulation::emitParticles()
 	STOP_TIMING_AVG
 }
 
+void SPH::Simulation::setEmitterSystemAirParticleData(unsigned int fluidModelIndex, std::vector<Vector3r>& pos, std::vector<Vector3r>& vel)
+{
+	FluidModel *fm = getFluidModel(fluidModelIndex);
+    fm->getEmitterSystem()->setEmitterAirParticleData(pos, vel);
+}
+
 void Simulation::animateParticles()
 {
 	START_TIMING("animateParticles");
@@ -761,17 +767,17 @@ void Simulation::updateBoundaryVolume()
 		if (!getBoundaryModel(i)->getRigidBodyObject()->isDynamic() && !getBoundaryModel(i)->getRigidBodyObject()->isAnimated())
 			m_neighborhoodSearch->set_active(i + nFluids, true, true);
 	}
-
+	
 	//performNeighborhoodSearchSort();
 	m_neighborhoodSearch->find_neighbors();
-
+	
 	// Boundary objects
 	for (unsigned int body = 0; body < numberOfBoundaryModels(); body++)
 	{
 		if (!getBoundaryModel(body)->getRigidBodyObject()->isDynamic() && !getBoundaryModel(body)->getRigidBodyObject()->isAnimated())
 			static_cast<BoundaryModel_Akinci2012*>(getBoundaryModel(body))->computeBoundaryVolume();
 	}
-
+	
 	////////////////////////////////////////////////////////////////////////// 
 	// Compute boundary psi for all dynamic bodies
 	//////////////////////////////////////////////////////////////////////////
@@ -788,7 +794,7 @@ void Simulation::updateBoundaryVolume()
 			static_cast<BoundaryModel_Akinci2012*>(getBoundaryModel(body))->computeBoundaryVolume();
 		}
 	}
-
+	
 	// Activate only fluids 
 	m_neighborhoodSearch->set_active(false);
 	for (unsigned int i = 0; i < numberOfFluidModels(); i++)
@@ -798,7 +804,7 @@ void Simulation::updateBoundaryVolume()
 		for (unsigned int j = numberOfFluidModels(); j < m_neighborhoodSearch->point_sets().size(); j++)
 			m_neighborhoodSearch->set_active(i, j, true);
 	}
-}
+	}
 
 void SPH::Simulation::saveState(BinaryFileWriter &binWriter)
 {

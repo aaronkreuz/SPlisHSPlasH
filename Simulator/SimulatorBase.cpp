@@ -1305,7 +1305,8 @@ void SimulatorBase::createEmitters()
 				if (ed->type == 1)
 					ed->height = ed->width;
 				ed->width = 1;
-				ed->type = 0;
+				if(ed->type != 5)
+					ed->type = 0;
 			}
 			Matrix3r rot = AngleAxisr(ed->angle, ed->axis).toRotationMatrix();
 			model->getEmitterSystem()->addEmitter(

@@ -39,7 +39,7 @@ namespace SPH
 
 			std::vector<std::vector<Vector3r>> m_pressureAccel;
 
-		public:
+					public:
 
 			/** Initialize the arrays containing the particle data.
 			*/
