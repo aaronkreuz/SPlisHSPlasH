@@ -434,11 +434,6 @@ namespace SPH
 		void animateParticles();
 		void emitParticles();
 
-		//////////////////////////////////////////////////////////////////////////
-		// trapped Air Bubble Approach
-		void setEmitterSystemAirParticleData(unsigned int fluidModelIndex, std::vector<Vector3r>& pos, std::vector<Vector3r>& vel);
-		//////////////////////////////////////////////////////////////////////////
-
 		virtual void emittedParticles(FluidModel *model, const unsigned int startIndex);
 
 		NeighborhoodSearch* getNeighborhoodSearch() { return m_neighborhoodSearch; }

@@ -20,9 +20,13 @@ int TimeStepDFSPHbubbleOp::MAX_ITERATIONS_V = -1;
 int TimeStepDFSPHbubbleOp::MAX_ERROR_V = -1;
 int TimeStepDFSPHbubbleOp::USE_DIVERGENCE_SOLVER = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
+int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR_OPTIMIZATION = -1;
 int TimeStepDFSPHbubbleOp::VMIN_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VT_TRAPPED_AIR = -1;
-
+int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_AIR = -1;
+int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_LIQ = -1;
+int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_AIR = -1;
+int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_LIQ = -1;
 
 
 TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
@@ -34,11 +38,16 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_iterationsV = 0;
 	m_enableDivergenceSolver = true;
 	m_enableTrappedAir = false;
+	m_enableTrappedAirOptimization = false;
 	m_maxIterationsV = 100;
 	m_maxErrorV = static_cast<Real>(0.1);
 	m_vMinTrappedAir = static_cast<Real>(9.0);
 	m_vtTrappedAir = static_cast<Real>(0.3);
 	m_nextEmitTime = static_cast<Real>(0.0);
+	m_iterationsAir = 0;
+	m_iterationsLiq = 0;
+	m_iterationsVair = 0;
+	m_iterationsVliq = 0;
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
@@ -81,6 +90,26 @@ void TimeStepDFSPHbubbleOp::initParameters()
 {
 	TimeStep::initParameters();
 
+	SOLVER_ITERATIONS_AIR = createNumericParameter("iterationsAir", "Iterations density (air)", &m_iterationsAir);
+	setGroup(SOLVER_ITERATIONS_AIR, "Simulation|DFSPH");
+	setDescription(SOLVER_ITERATIONS_AIR, "Iterations required by the density solver for air model.");
+	getParameter(SOLVER_ITERATIONS_AIR)->setReadOnly(true);
+
+	SOLVER_ITERATIONS_LIQ = createNumericParameter("iterationsLiq", "Iterations density (liquid)", &m_iterationsLiq);
+	setGroup(SOLVER_ITERATIONS_LIQ, "Simulation|DFSPH");
+	setDescription(SOLVER_ITERATIONS_LIQ, "Iterations required by the density solver for liquid model.");
+	getParameter(SOLVER_ITERATIONS_LIQ)->setReadOnly(true);
+
+	SOLVER_ITERATIONS_V_AIR = createNumericParameter("iterationsVAir", "Iterations divergence (air)", &m_iterationsVair);
+	setGroup(SOLVER_ITERATIONS_V_AIR, "Simulation|DFSPH");
+	setDescription(SOLVER_ITERATIONS_V_AIR, "Iterations required by the divergence solver for air model.");
+	getParameter(SOLVER_ITERATIONS_V_AIR)->setReadOnly(true);
+
+	SOLVER_ITERATIONS_V_LIQ = createNumericParameter("iterationsVLiq", "Iterations divergence (liquid)", &m_iterationsVliq);
+	setGroup(SOLVER_ITERATIONS_V_LIQ, "Simulation|DFSPH");
+	setDescription(SOLVER_ITERATIONS_V_LIQ, "Iterations required by the divergence solver for liquid model.");
+	getParameter(SOLVER_ITERATIONS_V_LIQ)->setReadOnly(true);
+
 	SOLVER_ITERATIONS_V = createNumericParameter("iterationsV", "Iterations (divergence)", &m_iterationsV);
 	setGroup(SOLVER_ITERATIONS_V, "Simulation|DFSPH");
 	setDescription(SOLVER_ITERATIONS_V, "Iterations required by the divergence solver.");
@@ -103,6 +132,10 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	USE_TRAPPED_AIR = createBoolParameter("enableTrappedAir", "Enable trapped air generation", &m_enableTrappedAir);
 	setGroup(USE_TRAPPED_AIR, "Simulation|DFSPH");
 	setDescription(USE_TRAPPED_AIR, "Turn trapped air generation on/off.");
+
+	USE_TRAPPED_AIR_OPTIMIZATION = createBoolParameter("enableTrappedAirOptimization", "Enable trapped air optimization", &m_enableTrappedAirOptimization);
+	setGroup(USE_TRAPPED_AIR_OPTIMIZATION, "Simulation|DFSPH");
+	setDescription(USE_TRAPPED_AIR_OPTIMIZATION, "Turn trapped air optimization on/off - optimiation prevents emitation if distance to air particle is too small.");
 
 	VMIN_TRAPPED_AIR = createNumericParameter("vMinTrappedAir", "Min. velocity trapped air", &m_vMinTrappedAir);
 	setGroup(VMIN_TRAPPED_AIR, "Simulation|DFSPH");
@@ -306,90 +339,11 @@ void TimeStepDFSPHbubbleOp::step()
 		}
 	}
 
-	// fill m_simulationData.getPosAirParticles(), m_simulationData.getVelAirParticles() according to Ihmsen et al. 2011
-	// {
-	// 	FluidModel* model = sim->getFluidModel(liquidModelIndex); // liquid model naming convention for makros
-	// 	unsigned int fluidModelIndex = liquidModelIndex;
-	// 	FluidModel* airModel = sim->getFluidModel(airModelIndex);
-	// 	const unsigned int numLiqParticles = model->numActiveParticles();
-	// 
-	// 	m_simulationData.getPosAirParticles().clear();
-	// 	m_simulationData.getVelAirParticles().clear();
-	// 	unsigned int numParticlesForGeneration = 0;
-	// 
-	// 	for (unsigned int i = 0; i < numLiqParticles; i++) {
-	// 
-	// 		if (((airModel->numActiveParticles() + numParticlesForGeneration) >= airModel->numParticles())
-	// 			|| (numParticlesForGeneration > 5))
-	// 			break;
-	// 
-	// 		if(model->getParticleState(i) != ParticleState::Active)
-    //             continue;
-	// 
-	// 		const Vector3r& xi = model->getPosition(i);
-	// 		const Vector3r& vi = model->getVelocity(i);
-	// 
-	// 		if (vi.squaredNorm() < m_vMinTrappedAir) {
-	// 			continue;
-	// 		}
-	// 
-	// 		// compute v_diff
-	// 		Vector3r v_diff = Vector3r::Zero();
-	// 
-	// 		// loop over liquid neighbors
-	// 		forall_fluid_neighbors_in_same_phase(
-	// 			const Vector3r& vj = model->getVelocity(neighborIndex);
-	// 			const Real& density_j = model->getDensity(neighborIndex);
-	// 			const Vector3r v_ij = vi - vj;
-	// 
-	// 			v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
-	// 		);
-	// 
-	// 		v_diff *= model->getMass(i);
-	// 		Real vDiffNorm = v_diff.norm();
-	// 
-	// 		if (vDiffNorm < m_vtTrappedAir) {
-	// 			continue;
-	// 		}
-	// 
-	// 		// get number of air neighbors of liquid particle i
-	// 		unsigned int numAirNeighbors = 0;
-	// 		numAirNeighbors += sim->numberOfNeighbors(fluidModelIndex, airModel->getPointSetIndex(), i);
-	// 
-	// 		if (numAirNeighbors >= (vDiffNorm / m_vtTrappedAir))
-	// 			continue;
-	// 
-    //         m_simulationData.getPosAirParticles().push_back(model->getPosition(i));
-    //         m_simulationData.getVelAirParticles().push_back(model->getVelocity(i));
-	// 		numParticlesForGeneration++;
-    //     }
-	// }
-	
-	// set emitter trapped air data
-	//sim->setEmitterSystemAirParticleData(airModelIndex, m_simulationData.getPosAirParticles(), m_simulationData.getVelAirParticles());
-
-	// TODO DEBUG: store velocities and positions of liquid in array
-	// FluidModel* liquidModel = sim->getFluidModel(liquidModelIndex);
-	// std::vector<Vector3r> posLiquid;
-	// std::vector<Vector3r> velLiquid;
-	// for (int i = 0; i < nLiquidParticles; i++) {
-	//     posLiquid.push_back(liquidModel->getPosition(i));
-	//     velLiquid.push_back(liquidModel->getVelocity(i));
-	// }
-
 	//////////////////////////////////////////////////////////////////////////
 	// emit new particles and perform an animation field step
 	//////////////////////////////////////////////////////////////////////////
-	//sim->emitParticles();
+	sim->emitParticles();
 	sim->animateParticles();
-
-	// TODO DEBUG: compare velocities and positions of liquid after new air particles were emitted
-	// const unsigned int nLiquidParticlesAfter = liquidModel->numActiveParticles();
-	// assert(nLiquidParticlesAfter == nLiquidParticles);
-	// for (int i = 0; i < nLiquidParticles; i++) {
-	// 	assert(posLiquid[i] == liquidModel->getPosition(i));
-	// 	assert(velLiquid[i] == liquidModel->getVelocity(i));
-	// }
 
 	//////////////////////////////////////////////////////////////////////////
 	// air particle generation: Trapped Air
@@ -452,38 +406,40 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int liquidModelI
 
 	//////////////////////////////////////////////////////////////////////////
 	// extension AK: check if there is any air particle too close to the current liquid particle
-	// const Real radius = sim->getParticleRadius();
-	// const Real diam = 2 * radius;
-	// const unsigned int nFluids = sim->numberOfFluidModels();
-	// 
-	// volatile bool isTooClose = false;
-	// // loop over all air particles in this specific case
-	// forall_fluid_neighbors_in_different_phase(
-	// 	if(isTooClose){
-	// 		continue;
-	// 	}
-	// 
-	// 	const Vector3r xij = xi - xj;
-	// 	if(xij.squaredNorm() < (5.0 * diam * diam)){
-	// 		isTooClose = true;
-	// 	}
-	// );
-	// 
-	// for (unsigned int j : indicesGen){
-	// 	if(isTooClose){
-	// 		continue;
-	// 	}
-	// 
-	// 	const Vector3r xij = xi - model->getPosition(j);
-	// 	if(xij.squaredNorm() < (5.0 * diam)){
-	// 		isTooClose = true;
-	// 	}
-	// }
-	// 
-	// if(isTooClose){
-	// 	// neighbor air particle too close -> skip this liquid particle
-	// 	return;
-	// }
+	if (m_enableTrappedAirOptimization) {
+		const Real radius = sim->getParticleRadius();
+		const Real diam = 2 * radius;
+		const unsigned int nFluids = sim->numberOfFluidModels();
+
+		volatile bool isTooClose = false;
+		// loop over all air particles in this specific case
+		forall_fluid_neighbors_in_different_phase(
+			if (isTooClose) {
+				continue;
+			}
+
+		const Vector3r xij = xi - xj;
+		if (xij.squaredNorm() < (5.0 * diam * diam)) {
+			isTooClose = true;
+		}
+		);
+
+		for (unsigned int j : indicesGen) {
+			if (isTooClose) {
+				continue;
+			}
+
+			const Vector3r xij = xi - model->getPosition(j);
+			if (xij.squaredNorm() < (5.0 * diam)) {
+				isTooClose = true;
+			}
+		}
+
+		if (isTooClose) {
+			// neighbor air particle too close -> skip this liquid particle
+			return;
+		}
+	}
 	//////////////////////////////////////////////////////////////////////////
 
 	// compute v_diff
@@ -754,24 +710,24 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 	}
 
 
-
-	//INFO: Changes made -> individual pressure solver for each fluid model to avoid coupling effects 
 	//////////////////////////////////////////////////////////////////////////
 	// Start solver
 	//////////////////////////////////////////////////////////////////////////
 	Real avg_density_err = 0.0;
 	bool chk = false;
+	unsigned int iterations[2] = { 0,0 };
+	assert(nFluids == 2, "More or less than 2 FluidModels");
+	m_iterations = 0;
 
 	for (unsigned int i = 0; i < nFluids; i++) {
-		m_iterations = 0; // TODO: add different counters for each fluid model
-
 		FluidModel* model = sim->getFluidModel(i);
 		const Real density0 = model->getDensity0();
+		iterations[i] = 0;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Perform solver iterations
 		//////////////////////////////////////////////////////////////////////////
-		while ((!chk || (m_iterations < m_minIterations)) && (m_iterations < m_maxIterations)) {
+		while ((!chk || (iterations[i] < m_minIterations)) && (iterations[i] < m_maxIterations)) {
 			chk = true;
 			avg_density_err = 0.0;
 
@@ -781,30 +737,14 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 			const Real eta = m_maxError * static_cast<Real>(0.01) * density0;  // maxError is given in percent
 			chk = avg_density_err <= eta;
 
-			m_iterations++;
+			iterations[i]++;
 		}
 	}
 
-	// while ((!chk || (m_iterations < m_minIterations)) && (m_iterations < m_maxIterations))
-	// {
-	// 	chk = true;
-	// 	for (unsigned int i = 0; i < nFluids; i++)
-	// 	{
-	// 		FluidModel *model = sim->getFluidModel(i);
-	// 		const Real density0 = model->getDensity0();
-	// 
-	// 		avg_density_err = 0.0;
-	// 		pressureSolveIteration(i, avg_density_err);
-	// 
-	// 		// Maximal allowed density fluctuation
-	// 		const Real eta = m_maxError * static_cast<Real>(0.01) * density0;  // maxError is given in percent
-	// 		chk = chk && (avg_density_err <= eta);
-	// 	}
-	// 
-	// 	m_iterations++;
-	// }
+	m_iterations = iterations[0] + iterations[1];
+	m_iterationsAir = sim->getFluidModel(0)->getId() == "Air" ? iterations[0] : iterations[1];
+	m_iterationsLiq = sim->getFluidModel(0)->getId() == "Liquid" ? iterations[0] : iterations[1];
 
-	// INFO: At the moment this counter only counts the iterations of the last fluid model
 	INCREASE_COUNTER("DFSPH - iterations", static_cast<Real>(m_iterations));
 
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++)
@@ -936,15 +876,19 @@ void TimeStepDFSPHbubbleOp::divergenceSolve()
 	Real avg_density_err = 0.0;
 	bool chk = false;
 
+	unsigned int iterationsV[2] = { 0,0 };
+	assert(nFluids == 2, "More or less than 2 FluidModels");
+	m_iterationsV = 0;
+
 	for (unsigned int i = 0; i < nFluids; i++) {
-		m_iterationsV = 0; // TODO: add different counters for each fluid model
+		iterationsV[i] = 0;
 		FluidModel* model = sim->getFluidModel(i);
 		const Real density0 = model->getDensity0();
 
 		//////////////////////////////////////////////////////////////////////////
 		// Perform solver iterations
 		//////////////////////////////////////////////////////////////////////////
-		while ((!chk || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
+		while ((!chk || (iterationsV[i] < 1)) && (iterationsV[i] < maxIter))
 		{
 			chk = true;
 			avg_density_err = 0.0;
@@ -956,34 +900,15 @@ void TimeStepDFSPHbubbleOp::divergenceSolve()
 			const Real eta = (static_cast<Real>(1.0) / h) * maxError * static_cast<Real>(0.01) * density0;  // maxError is given in percent
 			chk = avg_density_err <= eta;
 
-			m_iterationsV++;
+			iterationsV[i]++;
 		}
 	}
 
-	// //////////////////////////////////////////////////////////////////////////
-	// // Perform solver iterations
-	// //////////////////////////////////////////////////////////////////////////
-	// while ((!chk || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
-	// {
-	// 	chk = true;
-	// 	for (unsigned int i = 0; i < nFluids; i++)
-	// 	{
-	// 		FluidModel *model = sim->getFluidModel(i);
-	// 		const Real density0 = model->getDensity0();
-	// 
-	// 		avg_density_err = 0.0;
-	// 		divergenceSolveIteration(i, avg_density_err);
-	// 
-	// 		// Maximal allowed density fluctuation
-	// 		// use maximal density error divided by time step size
-	// 		const Real eta = (static_cast<Real>(1.0) / h) * maxError * static_cast<Real>(0.01) * density0;  // maxError is given in percent
-	// 		chk = chk && (avg_density_err <= eta);
-	// 	}
-	// 
-	// 	m_iterationsV++;
-	// }
+	m_iterationsV = iterationsV[0] + iterationsV[1];
+	m_iterationsVair = sim->getFluidModel(0)->getId() == "Air" ? iterationsV[0] : iterationsV[1];
+	m_iterationsVliq = sim->getFluidModel(1)->getId() == "Liquid" ? iterationsV[1] : iterationsV[0];
 
-	// INFO: At the moment this only counts the iterations of the last fluid model
+
 	INCREASE_COUNTER("DFSPH - iterationsV", static_cast<Real>(m_iterationsV));
 
 	
@@ -2013,7 +1938,7 @@ void TimeStepDFSPHbubbleOp::computeCohesionForce(const unsigned int fluidModelIn
 	}
 }
 
-void TimeStepDFSPHbubbleOp::computeViscosityForce(const unsigned int fluidModelIndex, const unsigned i, const Real h) {
+void TimeStepDFSPHbubbleOp::computeViscosityForce(const unsigned int fluidModelIndex, const unsigned int i, const Real h){
 	Simulation* sim = Simulation::getCurrent();
 	FluidModel* model = Simulation::getCurrent()->getFluidModel(fluidModelIndex);
 	Vector3r& accel_i = model->getAcceleration(i);
@@ -2024,7 +1949,7 @@ void TimeStepDFSPHbubbleOp::computeViscosityForce(const unsigned int fluidModelI
 
 	forall_fluid_neighbors_in_same_phase(
 		sum += (model->getMass(neighborIndex) / model->getDensity(neighborIndex)) * (model->getVelocity(neighborIndex) - model->getVelocity(i)) * CubicKernel::W(xi - xj);
-		);
+	);
 
 	accel_i += factor * sum;
 }

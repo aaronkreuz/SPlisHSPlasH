@@ -72,7 +72,7 @@ namespace SPH
 			name(n), type(t), getFct(fct), storeData(s) { }
 	};
 
-	enum class ParticleState { Active = 0, AnimatedByEmitter, Fixed, Disabled, AirParticleSpawned };
+	enum class ParticleState { Active = 0, AnimatedByEmitter, Fixed, Disabled };
 
 	/** \brief The fluid model stores the particle and simulation information 
 	*/

@@ -32,10 +32,6 @@ namespace SPH
 			unsigned int m_emitCounter;
 			unsigned int m_objectId;
 
-			std::vector<Vector3r> positionsAir;
-			std::vector<Vector3r> velocitiesAir;
-			unsigned int totalEmittedParticles;
-
 			FORCE_INLINE bool inBox(const Vector3r &x, const Vector3r &xBox, const Matrix3r &rotBox, const Vector3r &scaleBox)
 			{
 				const Vector3r xlocal = rotBox.transpose() * (x - xBox);
@@ -58,19 +54,11 @@ namespace SPH
 		public:
 			void emitParticles(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles);
 			void emitParticlesCircle(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles);
-			void emitAirParticles(std::vector<unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles);
 			Real getNextEmitTime() const { return m_nextEmitTime; }
 			void setNextEmitTime(Real val) { m_nextEmitTime = val; }
 			void setEmitStartTime(Real val) { m_emitStartTime = val; setNextEmitTime(val); }
 			void setEmitEndTime(Real val) { m_emitEndTime = val; }
 			static Vector3r getSize(const Real width, const Real height, const int type);
-
-			//////////////////////////////////////////////////////////////////////////
-			// trapped Air Bubble Approach
-			void trappedAirStep(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles, std::vector<Vector3r>& pos, std::vector<Vector3r>& vel);
-
-			void setEmitterAirParticleData(std::vector<Vector3r>& pos, std::vector<Vector3r>& vel);
-			//////////////////////////////////////////////////////////////////////////
 
 			void step(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles);
 			virtual void reset();

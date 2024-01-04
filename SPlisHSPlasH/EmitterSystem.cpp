@@ -92,14 +92,6 @@ void EmitterSystem::reset()
 	}
 }
 
-void SPH::EmitterSystem::setEmitterAirParticleData(std::vector<Vector3r>& pos, std::vector<Vector3r>& vel)
-{
-	for (size_t i = 0; i < m_emitters.size(); i++)
-	{
-        m_emitters[i]->setEmitterAirParticleData(pos, vel);
-    }
-}
-
 void EmitterSystem::addEmitter(const unsigned int width, const unsigned int height,
 	const Vector3r &pos, const Matrix3r & rotation,
 	const Real velocity,

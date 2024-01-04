@@ -32,6 +32,13 @@ namespace SPH
 		Real m_maxErrorV;
 		unsigned int m_maxIterationsV;
 		bool m_enableTrappedAir;
+		bool m_enableTrappedAirOptimization; // do not emit air particle if another air particle is too close (threshold)
+
+		unsigned int m_iterationsLiq;
+		unsigned int m_iterationsAir;
+		unsigned int m_iterationsVliq;
+		unsigned int m_iterationsVair;
+
 
 		// BUBBLE related constants
 		Real m_dragConstantAir = static_cast<Real>(8.0);
@@ -94,8 +101,14 @@ namespace SPH
 		static int MAX_ERROR_V;
 		static int USE_DIVERGENCE_SOLVER;
 		static int USE_TRAPPED_AIR;
+		static int USE_TRAPPED_AIR_OPTIMIZATION;
 		static int VMIN_TRAPPED_AIR;
 		static int VT_TRAPPED_AIR;
+		static int SOLVER_ITERATIONS_LIQ;
+		static int SOLVER_ITERATIONS_AIR;
+		static int SOLVER_ITERATIONS_V_LIQ;
+		static int SOLVER_ITERATIONS_V_AIR;
+
 
 		TimeStepDFSPHbubbleOp();
 		virtual ~TimeStepDFSPHbubbleOp(void);

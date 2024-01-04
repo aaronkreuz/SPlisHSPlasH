@@ -718,12 +718,6 @@ void Simulation::emitParticles()
 	STOP_TIMING_AVG
 }
 
-void SPH::Simulation::setEmitterSystemAirParticleData(unsigned int fluidModelIndex, std::vector<Vector3r>& pos, std::vector<Vector3r>& vel)
-{
-	FluidModel *fm = getFluidModel(fluidModelIndex);
-    fm->getEmitterSystem()->setEmitterAirParticleData(pos, vel);
-}
-
 void Simulation::animateParticles()
 {
 	START_TIMING("animateParticles");
