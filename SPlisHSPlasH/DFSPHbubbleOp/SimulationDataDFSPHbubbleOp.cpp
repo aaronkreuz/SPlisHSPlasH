@@ -11,9 +11,7 @@ SimulationDataDFSPHbubbleOp::SimulationDataDFSPHbubbleOp() :
 	m_pressureAccel(),
 	m_density_adv(),
 	m_onSurfaceAir(),
-	m_lifetimeAir(),
-	m_posAirParticles(),
-	m_velAirParticles()
+	m_lifetimeAir()
 {
 }
 
@@ -70,8 +68,6 @@ void SimulationDataDFSPHbubbleOp::cleanup()
 	m_pressureAccel.clear();
 	m_onSurfaceAir.clear();
 	m_lifetimeAir.clear();
-	m_posAirParticles.clear();
-	m_velAirParticles.clear();
 }
 
 void SimulationDataDFSPHbubbleOp::reset()

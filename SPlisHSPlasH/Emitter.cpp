@@ -382,9 +382,9 @@ void Emitter::emitParticlesCircle(std::vector <unsigned int> &reusedParticles, u
 void Emitter::step(std::vector <unsigned int> &reusedParticles, unsigned int &indexReuse, unsigned int &numEmittedParticles)
 {
 	if (m_type == 1)
-	 	emitParticlesCircle(reusedParticles, indexReuse, numEmittedParticles);
+		emitParticlesCircle(reusedParticles, indexReuse, numEmittedParticles);
 	else
-	 	emitParticles(reusedParticles, indexReuse, numEmittedParticles);
+		emitParticles(reusedParticles, indexReuse, numEmittedParticles);
 }
 
 void SPH::Emitter::saveState(BinaryFileWriter &binWriter)

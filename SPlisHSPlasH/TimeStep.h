@@ -38,6 +38,7 @@ namespace SPH
 
 		void computeDensitiesForLiquidPhase(const unsigned int fluidModelIndex);
 		void computeDensitiesForSamePhase(const unsigned int fluidModelIndex);
+		void computeDensitiesForSamePhaseAVX(const unsigned int fluidModelIndex);
 
 	public:
 		TimeStep();

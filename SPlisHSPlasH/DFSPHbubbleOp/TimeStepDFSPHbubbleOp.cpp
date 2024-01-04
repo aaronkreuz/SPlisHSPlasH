@@ -179,7 +179,7 @@ void TimeStepDFSPHbubbleOp::step()
 	// compute densities
 	//////////////////////////////////////////////////////////////////////////
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
-		computeDensitiesForSamePhase(fluidModelIndex);
+		computeDensitiesForSamePhaseAVX(fluidModelIndex);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compute the factor alpha_i for all particles i

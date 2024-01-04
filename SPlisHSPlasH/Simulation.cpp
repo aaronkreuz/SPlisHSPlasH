@@ -788,7 +788,7 @@ void Simulation::updateBoundaryVolume()
 			static_cast<BoundaryModel_Akinci2012*>(getBoundaryModel(body))->computeBoundaryVolume();
 		}
 	}
-	
+
 	// Activate only fluids 
 	m_neighborhoodSearch->set_active(false);
 	for (unsigned int i = 0; i < numberOfFluidModels(); i++)
@@ -798,7 +798,7 @@ void Simulation::updateBoundaryVolume()
 		for (unsigned int j = numberOfFluidModels(); j < m_neighborhoodSearch->point_sets().size(); j++)
 			m_neighborhoodSearch->set_active(i, j, true);
 	}
-	}
+}
 
 void SPH::Simulation::saveState(BinaryFileWriter &binWriter)
 {

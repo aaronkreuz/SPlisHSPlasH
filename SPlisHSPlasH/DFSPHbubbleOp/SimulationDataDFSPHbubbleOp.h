@@ -37,10 +37,6 @@ namespace SPH
 			std::vector<unsigned int> m_onSurfaceAir;
 			std::vector<Real> m_lifetimeAir;
 
-			// trappedAir
-			std::vector<Vector3r> m_posAirParticles;
-			std::vector<Vector3r> m_velAirParticles;
-
 
 		public:
 
@@ -170,26 +166,6 @@ namespace SPH
 			{
 				m_lifetimeAir[i] = val;
 			}
-
-			FORCE_INLINE std::vector<Vector3r>& getPosAirParticles()
-			{
-                return m_posAirParticles;
-            }
-
-			FORCE_INLINE std::vector<Vector3r> getPosAirParticles() const
-			{
-                return m_posAirParticles;
-            }
-
-			FORCE_INLINE std::vector<Vector3r>& getVelAirParticles()
-			{
-                return m_velAirParticles;
-            }
-
-			FORCE_INLINE std::vector<Vector3r> getVelAirParticles() const
-			{
-                return m_velAirParticles;
-            }
 	};
 }
 
