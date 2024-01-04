@@ -223,10 +223,10 @@ void TimeStepDFSPHbubbleOp::step()
 		//////////////////////////////////////////////////////////////////////////
 		#pragma omp parallel default(shared)
 		{
-		#pragma omp for schedule(static)
-		for(int i = 0; i < nLiquidParticles; i++){
-		computeViscosityForce(liquidModelIndex, i, h);
-		}
+			#pragma omp for schedule(static)
+			for(int i = 0; i < nLiquidParticles; i++){
+				computeViscosityForce(liquidModelIndex, i, h);
+			}
 		}
 	
 		//////////////////////////////////////////////////////////////////////////
@@ -301,83 +301,95 @@ void TimeStepDFSPHbubbleOp::step()
 					Vector3r &xi = fm->getPosition(i);
 					const Vector3r &vi = fm->getVelocity(i);
 					xi += h * vi;
-
-					if (fm->getId() == "Liquid" && vi.norm() > 100.0) {
-						LOG_INFO << "Velocity of liquid particle " << i << ": " << vi;
-                        LOG_INFO << "Position of liquid particle " << i << ": " << xi;
-					}
 				}
 			}
 		}
 	}
 
 	// fill m_simulationData.getPosAirParticles(), m_simulationData.getVelAirParticles() according to Ihmsen et al. 2011
-	{
-		FluidModel* model = sim->getFluidModel(liquidModelIndex); // liquid model naming convention for makros
-		unsigned int fluidModelIndex = liquidModelIndex;
-		FluidModel* airModel = sim->getFluidModel(airModelIndex);
-		const unsigned int numLiqParticles = model->numActiveParticles();
-	
-		m_simulationData.getPosAirParticles().clear();
-		m_simulationData.getVelAirParticles().clear();
-		unsigned int numParticlesForGeneration = 0;
-	
-		for (unsigned int i = 0; i < numLiqParticles; i++) {
-	
-			if (((airModel->numActiveParticles() + numParticlesForGeneration) >= airModel->numParticles())
-				|| (numParticlesForGeneration > 5))
-				break;
-	
-			if(model->getParticleState(i) != ParticleState::Active)
-                continue;
-	
-			const Vector3r& xi = model->getPosition(i);
-			const Vector3r& vi = model->getVelocity(i);
-	
-			if (vi.squaredNorm() < m_vMinTrappedAir) {
-				continue;
-			}
-	
-			// compute v_diff
-			Vector3r v_diff = Vector3r::Zero();
-	
-			// loop over liquid neighbors
-			forall_fluid_neighbors_in_same_phase(
-				const Vector3r& vj = model->getVelocity(neighborIndex);
-				const Real& density_j = model->getDensity(neighborIndex);
-				const Vector3r v_ij = vi - vj;
-	
-				v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
-			);
-	
-			v_diff *= model->getMass(i);
-			Real vDiffNorm = v_diff.norm();
-	
-			if (vDiffNorm < m_vtTrappedAir) {
-				continue;
-			}
-	
-			// get number of air neighbors of liquid particle i
-			unsigned int numAirNeighbors = 0;
-			numAirNeighbors += sim->numberOfNeighbors(fluidModelIndex, airModel->getPointSetIndex(), i);
-	
-			if (numAirNeighbors >= (vDiffNorm / m_vtTrappedAir))
-				continue;
-	
-            m_simulationData.getPosAirParticles().push_back(model->getPosition(i));
-            m_simulationData.getVelAirParticles().push_back(model->getVelocity(i));
-			numParticlesForGeneration++;
-        }
-	}
+	// {
+	// 	FluidModel* model = sim->getFluidModel(liquidModelIndex); // liquid model naming convention for makros
+	// 	unsigned int fluidModelIndex = liquidModelIndex;
+	// 	FluidModel* airModel = sim->getFluidModel(airModelIndex);
+	// 	const unsigned int numLiqParticles = model->numActiveParticles();
+	// 
+	// 	m_simulationData.getPosAirParticles().clear();
+	// 	m_simulationData.getVelAirParticles().clear();
+	// 	unsigned int numParticlesForGeneration = 0;
+	// 
+	// 	for (unsigned int i = 0; i < numLiqParticles; i++) {
+	// 
+	// 		if (((airModel->numActiveParticles() + numParticlesForGeneration) >= airModel->numParticles())
+	// 			|| (numParticlesForGeneration > 5))
+	// 			break;
+	// 
+	// 		if(model->getParticleState(i) != ParticleState::Active)
+    //             continue;
+	// 
+	// 		const Vector3r& xi = model->getPosition(i);
+	// 		const Vector3r& vi = model->getVelocity(i);
+	// 
+	// 		if (vi.squaredNorm() < m_vMinTrappedAir) {
+	// 			continue;
+	// 		}
+	// 
+	// 		// compute v_diff
+	// 		Vector3r v_diff = Vector3r::Zero();
+	// 
+	// 		// loop over liquid neighbors
+	// 		forall_fluid_neighbors_in_same_phase(
+	// 			const Vector3r& vj = model->getVelocity(neighborIndex);
+	// 			const Real& density_j = model->getDensity(neighborIndex);
+	// 			const Vector3r v_ij = vi - vj;
+	// 
+	// 			v_diff += (1.0 / density_j) * v_ij * sim->W(xi - xj);
+	// 		);
+	// 
+	// 		v_diff *= model->getMass(i);
+	// 		Real vDiffNorm = v_diff.norm();
+	// 
+	// 		if (vDiffNorm < m_vtTrappedAir) {
+	// 			continue;
+	// 		}
+	// 
+	// 		// get number of air neighbors of liquid particle i
+	// 		unsigned int numAirNeighbors = 0;
+	// 		numAirNeighbors += sim->numberOfNeighbors(fluidModelIndex, airModel->getPointSetIndex(), i);
+	// 
+	// 		if (numAirNeighbors >= (vDiffNorm / m_vtTrappedAir))
+	// 			continue;
+	// 
+    //         m_simulationData.getPosAirParticles().push_back(model->getPosition(i));
+    //         m_simulationData.getVelAirParticles().push_back(model->getVelocity(i));
+	// 		numParticlesForGeneration++;
+    //     }
+	// }
 	
 	// set emitter trapped air data
-	sim->setEmitterSystemAirParticleData(airModelIndex, m_simulationData.getPosAirParticles(), m_simulationData.getVelAirParticles());
+	//sim->setEmitterSystemAirParticleData(airModelIndex, m_simulationData.getPosAirParticles(), m_simulationData.getVelAirParticles());
+
+	// TODO DEBUG: store velocities and positions of liquid in array
+	// FluidModel* liquidModel = sim->getFluidModel(liquidModelIndex);
+	// std::vector<Vector3r> posLiquid;
+	// std::vector<Vector3r> velLiquid;
+	// for (int i = 0; i < nLiquidParticles; i++) {
+	//     posLiquid.push_back(liquidModel->getPosition(i));
+	//     velLiquid.push_back(liquidModel->getVelocity(i));
+	// }
 
 	//////////////////////////////////////////////////////////////////////////
 	// emit new particles and perform an animation field step
 	//////////////////////////////////////////////////////////////////////////
-	sim->emitParticles();
+	//sim->emitParticles();
 	sim->animateParticles();
+
+	// TODO DEBUG: compare velocities and positions of liquid after new air particles were emitted
+	// const unsigned int nLiquidParticlesAfter = liquidModel->numActiveParticles();
+	// assert(nLiquidParticlesAfter == nLiquidParticles);
+	// for (int i = 0; i < nLiquidParticles; i++) {
+	// 	assert(posLiquid[i] == liquidModel->getPosition(i));
+	// 	assert(velLiquid[i] == liquidModel->getVelocity(i));
+	// }
 
 	//////////////////////////////////////////////////////////////////////////
 	// air particle generation: Trapped Air
@@ -393,7 +405,7 @@ void TimeStepDFSPHbubbleOp::step()
 			indicesGen.clear();
 
 			for (unsigned int i = 0; i < nLiquidParticles; i++) {
-				if (emittedParticles < 1 && liquid->getParticleState(i) == ParticleState::Active) {
+				if (emittedParticles < 20 && liquid->getParticleState(i) == ParticleState::Active) {
 					trappedAirIhmsen2011(liquidModelIndex, i, emittedParticles, indicesGen);
 				}
 			}
@@ -440,38 +452,38 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int liquidModelI
 
 	//////////////////////////////////////////////////////////////////////////
 	// extension AK: check if there is any air particle too close to the current liquid particle
-	const Real radius = sim->getParticleRadius();
-	const Real diam = 2 * radius;
-	const unsigned int nFluids = sim->numberOfFluidModels();
-
-	volatile bool isTooClose = false;
-	// loop over all air particles in this specific case
-	forall_fluid_neighbors_in_different_phase(
-		if(isTooClose){
-			continue;
-		}
-
-		const Vector3r xij = xi - xj;
-		if(xij.squaredNorm() < (5.0 * diam * diam)){
-			isTooClose = true;
-		}
-	);
-
-	for (unsigned int j : indicesGen){
-		if(isTooClose){
-			continue;
-		}
-
-		const Vector3r xij = xi - model->getPosition(j);
-		if(xij.squaredNorm() < (5.0 * diam)){
-			isTooClose = true;
-		}
-	}
-
-	if(isTooClose){
-		// neighbor air particle too close -> skip this liquid particle
-		return;
-	}
+	// const Real radius = sim->getParticleRadius();
+	// const Real diam = 2 * radius;
+	// const unsigned int nFluids = sim->numberOfFluidModels();
+	// 
+	// volatile bool isTooClose = false;
+	// // loop over all air particles in this specific case
+	// forall_fluid_neighbors_in_different_phase(
+	// 	if(isTooClose){
+	// 		continue;
+	// 	}
+	// 
+	// 	const Vector3r xij = xi - xj;
+	// 	if(xij.squaredNorm() < (5.0 * diam * diam)){
+	// 		isTooClose = true;
+	// 	}
+	// );
+	// 
+	// for (unsigned int j : indicesGen){
+	// 	if(isTooClose){
+	// 		continue;
+	// 	}
+	// 
+	// 	const Vector3r xij = xi - model->getPosition(j);
+	// 	if(xij.squaredNorm() < (5.0 * diam)){
+	// 		isTooClose = true;
+	// 	}
+	// }
+	// 
+	// if(isTooClose){
+	// 	// neighbor air particle too close -> skip this liquid particle
+	// 	return;
+	// }
 	//////////////////////////////////////////////////////////////////////////
 
 	// compute v_diff

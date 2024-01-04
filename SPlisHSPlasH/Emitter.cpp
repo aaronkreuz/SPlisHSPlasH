@@ -32,6 +32,8 @@ Emitter::Emitter(FluidModel *model,
 
 Emitter::~Emitter(void)
 {
+	positionsAir.clear();
+	velocitiesAir.clear();
 }
 
 void Emitter::reset()
@@ -400,35 +402,47 @@ void SPH::Emitter::emitAirParticles(std::vector<unsigned int>& reusedParticles, 
 	if (t < m_emitStartTime || t > m_emitEndTime)
 		emitVel = emitDir * radius * 10 / 0.25;
 
-	// if (t >= m_emitStartTime - 0.25 && t <= m_emitEndTime)
-	// {
-	// 	// animate emitted particles
-	// 	const Vector3r& x0 = m_x;
-	// 
-	// 	const Real animationMarginAhead = sim->getSupportRadius();
-	// 	const Vector3r size = getSize(static_cast<Real>(m_width), static_cast<Real>(m_height), m_type);
-	// 	const Vector3r halfSize = 0.5 * size;
-	// 	const Vector3r pos = x0 + static_cast<Real>(0.5) * animationMarginAhead * emitDir;
-	// 
-	// 	const unsigned int nModels = sim->numberOfFluidModels();
-	// 	for (unsigned int m = 0; m < nModels; m++)
-	// 	{
-	// 		FluidModel* fm = sim->getFluidModel(m);
-	// 		const unsigned int numParticles = fm->numActiveParticles();
-	// 		#pragma omp parallel for schedule(static) default(shared)
-	// 		for (int i = 0; i < (int)numParticles; i++)
-	// 		{
-	// 			Vector3r& xi = fm->getPosition(i);
-	// 			if (inBox(xi, pos, m_rotation, halfSize))
-	// 			{
-	// 				fm->getVelocity(i) = emitVel;
-	// 				fm->getPosition(i) += timeStepSize * emitVel;
-	// 				fm->setParticleState(i, ParticleState::AnimatedByEmitter);
-	// 				fm->setObjectId(i, m_objectId);
-	// 			}
-	// 		}
-	// 	}
-	// }
+	assert(m_model->getId() == "Air");
+
+	const unsigned numberAirParticles = m_model->numParticles();
+	for (unsigned int i = 0; i < numberAirParticles; i++) {
+		if (m_model->getParticleState(i) == ParticleState::AirParticleSpawned) {
+			// animate freshly emitted air particles
+			m_model->getPosition(i) += timeStepSize * m_model->getVelocity(i);
+			m_model->setParticleState(i, ParticleState::Active);
+			m_model->setObjectId(i, m_objectId);
+		}
+	}
+
+	if (t >= m_emitStartTime - 0.25 && t <= m_emitEndTime)
+	{
+		// animate emitted particles
+		const Vector3r& x0 = m_x;
+
+		const Real animationMarginAhead = sim->getSupportRadius();
+		const Vector3r size = getSize(static_cast<Real>(m_width), static_cast<Real>(m_height), m_type);
+		const Vector3r halfSize = 0.5 * size;
+		const Vector3r pos = x0 + static_cast<Real>(0.5) * animationMarginAhead * emitDir;
+		
+		const unsigned int nModels = sim->numberOfFluidModels();
+		for (unsigned int m = 0; m < nModels; m++)
+		{
+			FluidModel* fm = sim->getFluidModel(m);
+			const unsigned int numParticles = fm->numActiveParticles();
+			#pragma omp parallel for schedule(static) default(shared)
+			for (int i = 0; i < (int)numParticles; i++)
+			{
+				Vector3r& xi = fm->getPosition(i);
+				if (inBox(xi, pos, m_rotation, halfSize))
+				{
+					fm->getVelocity(i) = emitVel;
+					fm->getPosition(i) += timeStepSize * emitVel;
+					fm->setParticleState(i, ParticleState::AnimatedByEmitter);
+					fm->setObjectId(i, m_objectId);
+				}
+			}
+		}
+	}
 	if (t < m_nextEmitTime)
 	{
 		return;
@@ -473,7 +487,7 @@ void SPH::Emitter::emitAirParticles(std::vector<unsigned int>& reusedParticles, 
 				{
 					m_model->getPosition(index) = positionsAir[i] + Vector3r{ 0.025, 0.025, 0.0 };
 					m_model->getVelocity(index) = velocitiesAir[i];
-					m_model->setParticleState(index, ParticleState::AnimatedByEmitter);
+					m_model->setParticleState(index, ParticleState::AirParticleSpawned);
 					m_model->setObjectId(index, m_objectId);
 
 					if (reused)
@@ -511,7 +525,7 @@ void SPH::Emitter::emitAirParticles(std::vector<unsigned int>& reusedParticles, 
 					{
 						m_model->getPosition(index) = positionsAir[i] + Vector3r{0.025, 0.025, 0.0};
 						m_model->getVelocity(index) = velocitiesAir[i];
-						m_model->setParticleState(index, ParticleState::AnimatedByEmitter);
+						m_model->setParticleState(index, ParticleState::AirParticleSpawned);
 						m_model->setObjectId(index, m_objectId);
 						numEmittedParticles++;
 						totalEmittedParticles++;
@@ -543,7 +557,7 @@ void Emitter::step(std::vector <unsigned int> &reusedParticles, unsigned int &in
 {
 	if (m_type == 1)
 	 	emitParticlesCircle(reusedParticles, indexReuse, numEmittedParticles);
-	else if (m_type == 5)
+	else if (m_type == 0)
 		emitAirParticles(reusedParticles, indexReuse, numEmittedParticles);
 	else
 	 	emitParticles(reusedParticles, indexReuse, numEmittedParticles);
