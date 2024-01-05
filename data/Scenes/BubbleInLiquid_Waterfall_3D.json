@@ -1,0 +1,102 @@
+{
+    "Configuration":
+    {
+        "pause": true,
+        "particleRadius": 0.025,
+        "colorMapType": 1,
+        "numberOfStepsPerRenderUpdate": 4,
+        "simulationMethod": 11,
+        "gravitation" : [0.0, -9.81, 0.0],
+        "cflMethod": 1,
+        "cflFactor": 1,
+        "cflMaxTimeStepSize": 0.005,
+        "maxIterations": 100,
+        "maxError": 0.1,
+        "maxIterationsV": 100,
+        "maxErrorV": 0.1,
+        "stiffness": 50000,
+        "exponent": 7,
+        "velocityUpdateMethod": 0,
+        "enableDivergenceSolver": true,
+        "boundaryHandlingMethod": 0,
+        "vMinTrappedAir": 7.0
+    },
+
+    "Materials": [
+		{
+			"id": "Liquid",
+			"surfaceTension": 0.2,
+			"surfaceTensionMethod": 0,		
+			"viscosity": 0.01,
+			"viscosityMethod": 0, 
+			"vorticityMethod": 0, 
+			"viscosityOmega": 0.05,
+			"inertiaInverse": 0.5,
+			"colorMapType": 0,
+            "density0": 1000.0,
+            "bubbleMethod": 1,
+            "renderModel": false,
+            "maxEmitterParticles": 10000,
+            "emitterReuseParticles": false
+		},
+        {
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 1.4,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 30.0,
+            "renderModel": true
+        }
+    ],
+
+    "RigidBodies": [
+		{
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,2.0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [4, 4, 4],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true,
+			"mapInvert": true, 
+			"mapThickness": 0.0
+		}
+	],
+
+    "Emitters": [
+        {
+            "width": 5, 
+            "height": 5, 
+            "translation": [-1.0,3.5,0.0],
+            "rotationAxis": [0, 1, 0],
+            "rotationAngle": 3.1415926535897932384626433832795,
+            "velocity": 2,	
+            "emitStartTime": 0,
+            "emitEndTime": 4,
+            "type": 0,
+            "id": "Liquid"
+        }
+    ],
+
+    "FluidBlocks": [
+		{
+            "id": "Liquid",
+			"denseMode": 0,
+			"start": [-2.0, 0.0, -2.0],
+			"end": [2.0, 2.0, 2.0],
+			"translation": [0.0, 0.005, 0.0],
+			"scale": [1, 1, 1]
+		},
+		{
+            "id": "Air",
+            "denseMode": 0,
+            "start": [-0.25, 0.0, -0.25],
+            "end": [0.25, 0.5, 0.25],
+            "translation": [0.025, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        }
+	]	
+}

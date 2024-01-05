@@ -247,26 +247,26 @@ void TimeStepDFSPHbubbleOp::step()
 	//////////////////////////////////////////////////////////////////////////
 	// Non-pressure forces
 	//////////////////////////////////////////////////////////////////////////
-	// sim->computeNonPressureForces();
+	sim->computeNonPressureForces();
 
 	// liquid pase exclusive non-pressure forces
-	if(nLiquidParticles > 0){
-		//////////////////////////////////////////////////////////////////////////
-		// Viscosity XSPH -> only liquid model
-		//////////////////////////////////////////////////////////////////////////
-		#pragma omp parallel default(shared)
-		{
-			#pragma omp for schedule(static)
-			for(int i = 0; i < nLiquidParticles; i++){
-				computeViscosityForce(liquidModelIndex, i, h);
-			}
-		}
-	
-		//////////////////////////////////////////////////////////////////////////
-		// Surface Tension Force -> for liquid model
-		//////////////////////////////////////////////////////////////////////////
-		computeSurfaceTensionForce(liquidModelIndex, h);
-	}
+	// if(nLiquidParticles > 0){
+	// 	//////////////////////////////////////////////////////////////////////////
+	// 	// Viscosity XSPH -> only liquid model
+	// 	//////////////////////////////////////////////////////////////////////////
+	// 	#pragma omp parallel default(shared)
+	// 	{
+	// 		#pragma omp for schedule(static)
+	// 		for(int i = 0; i < nLiquidParticles; i++){
+	// 			computeViscosityForce(liquidModelIndex, i, h);
+	// 		}
+	// 	}
+	// 
+	// 	//////////////////////////////////////////////////////////////////////////
+	// 	// Surface Tension Force -> for liquid model
+	// 	//////////////////////////////////////////////////////////////////////////
+	// 	computeSurfaceTensionForce(liquidModelIndex, h);
+	// }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Non-pressure Forces introduced by Bubble-paper Ihmsen et al.
@@ -1133,6 +1133,7 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 void TimeStepDFSPHbubbleOp::reset()
 {
 	TimeStep::reset();
+	m_nextEmitTime = 0.0;
 	m_simulationData.reset();
 	m_counter = 0;
 	m_iterations = 0;

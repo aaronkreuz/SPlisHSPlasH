@@ -90,6 +90,10 @@ void SimulationDataDFSPHbubbleOp::reset()
 				m_onSurfaceAir[j] = 0;
 				m_lifetimeAir[j] = 5.0f;
 			}
+
+			if (fm->getParticleState(i) != ParticleState::Active) {
+				fm->setParticleState(i, ParticleState::Active);
+			}
 		}
 	}
 }
