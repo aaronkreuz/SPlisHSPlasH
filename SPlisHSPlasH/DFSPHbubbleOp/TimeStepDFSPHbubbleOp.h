@@ -50,9 +50,14 @@ namespace SPH
 		const Real m_surfaceTensionConstant = static_cast<Real>(1.0);
 
 		// Trapped air
-		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011
-		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
+		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
 		Real m_nextEmitTime = static_cast<Real>(0.0);
+
+		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011 and 2012
+		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
+
+		Real m_vDiffThresholdMin = static_cast<Real>(5.0); // Ihmsen et al. 2012
+		Real m_vDiffThresholdMax = static_cast<Real>(20.0); // Ihmsen et al. 2012
 
 
 		//////////////////////////////////////////////////////////////////////////
@@ -83,7 +88,7 @@ namespace SPH
 
 		void computeOnSurfaceAir();
 		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
-		void trappedAirIhmsen2012();
+		void trappedAirIhmsen2012(unsigned int& emittedParticles);
 
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, Vector3r vel, Vector3r pos);
 
@@ -100,14 +105,24 @@ namespace SPH
 		static int MAX_ITERATIONS_V;
 		static int MAX_ERROR_V;
 		static int USE_DIVERGENCE_SOLVER;
-		static int USE_TRAPPED_AIR;
-		static int USE_TRAPPED_AIR_OPTIMIZATION;
-		static int VMIN_TRAPPED_AIR;
-		static int VT_TRAPPED_AIR;
 		static int SOLVER_ITERATIONS_LIQ;
 		static int SOLVER_ITERATIONS_AIR;
 		static int SOLVER_ITERATIONS_V_LIQ;
 		static int SOLVER_ITERATIONS_V_AIR;
+
+		// trapped air
+		static int TRAPPED_AIR_APPROACH;
+		static int ENUM_TRAPPED_AIR_APPROACH_NONE;
+		static int ENUM_TRAPPED_AIR_APPROACH_IHMSEN2011;
+		static int ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012;
+
+		static int USE_TRAPPED_AIR;
+		static int USE_TRAPPED_AIR_OPTIMIZATION;
+		static int VMIN_TRAPPED_AIR;
+		static int VT_TRAPPED_AIR;
+		static int VDIFF_THRESHOLD_MIN; // Ihmsen et al. 2012
+		static int VDIFF_THRESHOLD_MAX; // Ihmsen et al. 2012
+
 
 
 		TimeStepDFSPHbubbleOp();

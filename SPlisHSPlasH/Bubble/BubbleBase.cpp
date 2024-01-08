@@ -15,7 +15,7 @@ BubbleBase::BubbleBase(FluidModel *model):NonPressureForceBase(model)
 	m_dragConstantAir = static_cast<Real>(8.0); // originally 8.0
 	m_dragConstantLiq = static_cast<Real>(3.0); // originally 3.0
 	m_kmaxBuoyancy = static_cast<Real>(6.0); // originally 6.0
-	m_minBuoyancy = static_cast<Real>(2.4); // originally 14.0
+	m_minBuoyancy = static_cast<Real>(1.4); // originally 14.0
 }
 
 BubbleBase::~BubbleBase(void)

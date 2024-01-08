@@ -250,6 +250,7 @@ void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 	unsigned int numParticles = model->numActiveParticles();
 	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
 
+
 	// TODO: Better solution?
 	TimeStepDFSPHbubbleOp* timeStep = (TimeStepDFSPHbubbleOp*)sim->getTimeStep();
 
@@ -431,5 +432,5 @@ void BubbleIhmsen::performNeighborhoodSearchSort()
 
 	Simulation* sim = Simulation::getCurrent();
 	auto const& d = sim->getNeighborhoodSearch()->point_set(m_model->getPointSetIndex());
-	d.sort_field(&m_normals[0]);
+	d.sort_field(&m_normals[0]); 
 }

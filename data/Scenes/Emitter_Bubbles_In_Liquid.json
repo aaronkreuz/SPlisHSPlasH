@@ -65,10 +65,10 @@
 		{
 			"width": 8, 
 			"height": 3, 
-			"translation": [-1.2,1.25,0.0],
+			"translation": [-1.2,0.25,0.0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"velocity": 2,
+			"velocity": 3,
 			"type": 0,
 			"emitEndTime": 2,
 			"id": "Liquid"
@@ -77,8 +77,8 @@
 	"FluidBlocks": [
 		{
 			"denseMode": 0,
-			"start": [-1.25, 0.0, -0.5],
-			"end": [0.5, 0.6, 0.5],
+			"start": [-0.5, 0.0, -0.5],
+			"end": [1.25, 0.6, 0.5],
 			"translation": [0.0, 0.0, 0.0],
 			"scale": [1, 1, 1],
 			"id": "Liquid"
