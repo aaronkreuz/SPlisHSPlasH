@@ -756,7 +756,7 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 	Real avg_density_err = 0.0;
 	bool chk = false;
 	unsigned int iterations[2] = { 0,0 };
-	assert(nFluids == 2, "More or less than 2 FluidModels");
+	assert(nFluids == 2);
 	m_iterations = 0;
 
 	for (unsigned int i = 0; i < nFluids; i++) {
@@ -917,7 +917,7 @@ void TimeStepDFSPHbubbleOp::divergenceSolve()
 	bool chk = false;
 
 	unsigned int iterationsV[2] = { 0,0 };
-	assert(nFluids == 2, "More or less than 2 FluidModels");
+	assert(nFluids == 2);
 	m_iterationsV = 0;
 
 	for (unsigned int i = 0; i < nFluids; i++) {
