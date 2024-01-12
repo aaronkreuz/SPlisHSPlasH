@@ -2,6 +2,8 @@
 #include "SPlisHSPlasH/Simulation.h"
 #include "SPlisHSPlasH/TimeManager.h"
 #include "SPlisHSPlasH/DFSPHbubbleOp/TimeStepDFSPHbubbleOp.h"
+#include "SPlisHSPlasH/Utilities/MathFunctions.h"
+
 
 using namespace SPH;
 using namespace GenParam;
@@ -26,11 +28,16 @@ int BubbleIhmsen::DRAG_FORCE_AIR = -1;
 int BubbleIhmsen::ENUM_DRAG_FORCE_AIR_NONE = -1;
 int BubbleIhmsen::ENUM_DRAG_FORCE_AIR_IHMSEN = -1;
 
+int BubbleIhmsen::USE_GRADIENT_CORRECTION = -1;
+
 
 BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	BubbleBase(model)
 {
 	m_normals.resize(model->numParticles(), Vector3r::Zero());
+	if (model->getId() == "Air") {
+		m_L_air.resize(model->numParticles(), Matrix3r::Identity());
+    }	
 	// model->addField({ "normal", FieldType::Vector3, [&](const unsigned int i) -> Real* { return &m_normals[i][0]; }, false });
 
 	if(model->getId() == "Air"){
@@ -46,6 +53,7 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 		m_dragForceAir = 0;
 	}
 
+	m_useGradientCorrection = false;
 	m_onSurfaceThresholdDensity = 0.5; // TODO: changeable
 }
 
@@ -53,6 +61,7 @@ BubbleIhmsen::~BubbleIhmsen(void)
 {
 	// m_model->removeFieldByName("normal");
 	m_normals.clear();
+	m_L_air.clear();
 }
 
 void BubbleIhmsen::initParameters()
@@ -84,6 +93,10 @@ void BubbleIhmsen::initParameters()
 		enumParam = static_cast<EnumParameter*>(getParameter(DRAG_FORCE_AIR));
 		enumParam->addEnumValue("None", ENUM_DRAG_FORCE_AIR_NONE);
 		enumParam->addEnumValue("Ihmsen", ENUM_DRAG_FORCE_AIR_IHMSEN);
+
+		USE_GRADIENT_CORRECTION = createBoolParameter("useGradientCorrection", "Use gradient correction", &m_useGradientCorrection);
+		setGroup(USE_GRADIENT_CORRECTION, "Fluid Model|Bubble Forces");
+		setDescription(USE_GRADIENT_CORRECTION, "Use gradient correction for the drag force computation on air particles.");
 	}
 
 	else if(m_model->getId() == "Liquid"){
@@ -106,6 +119,7 @@ void BubbleIhmsen::step()
 
 void BubbleIhmsen::reset()
 {
+
 }
 
 void BubbleIhmsen::computeForces(FluidModel* model){
@@ -147,6 +161,10 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	//////////////////////////////////////////////////////////////////////////
 	if(m_dragForceAir == ENUM_DRAG_FORCE_AIR_IHMSEN)
 	{
+		if(m_useGradientCorrection){
+            computeGradientCorrection();
+        }
+
 		computeDragIhmsen(model);
 	}
 
@@ -243,6 +261,48 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 	// TODO: Should I consider the boundary here?
 }
 
+void SPH::BubbleIhmsen::computeGradientCorrection(void)
+{
+	assert(m_model->getId() == "Air");
+	Simulation* sim = Simulation::getCurrent();
+	FluidModel* model = m_model; // naming convention, air model
+	const unsigned int fluidModelIndex = m_model->getPointSetIndex();
+	const unsigned nParticles = m_model->numActiveParticles();
+	const unsigned nFluids = sim->numberOfFluidModels();
+
+	#pragma omp parallel default(shared)
+	{
+		#pragma omp for schedule(static)
+		for (int i = 0; i < nParticles; i++) {
+			Matrix3r& L = m_L_air[i];
+			L.setZero();
+
+			const Vector3r& xi = model->getPosition(i);
+
+			forall_fluid_neighbors(
+				const Vector3r xij = xi - xj;
+			const Vector3r xji = xj - xi;
+
+			// const Real m_j = model->getMass(neighborIndex);
+			// const Real rho_j = model->getDensity(neighborIndex);
+			const Real volume_j = fm_neighbor->getVolume(neighborIndex);
+
+			L += volume_j * sim->gradW(xij) * xji.transpose();
+			);
+
+			bool invertible = false;
+			L.computeInverseWithCheck(m_L_air[i], invertible, static_cast<Real>(1e-9));
+			if (!invertible)
+			{
+				MathFunctions::pseudoInverse(L, m_L_air[i]);
+				//m_L[i] = Matrix3r::Identity();
+			}
+			L = L.inverse(); // Might be inefficient
+		}
+	}
+	
+}
+
 // Standard method used in BUBBLE-paper
 void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 	Simulation* sim = Simulation::getCurrent();
@@ -321,7 +381,13 @@ void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
 				const Real pi_ij = std::max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).norm() + m_eps * (h2)));
 				// const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).squaredNorm() + m_eps * (h2)));
 
-				acc_drag += m_j * ((dragConstant*h*m_speedSound)/(density_j + density_i)) * pi_ij * sim->gradW(xi - xj);
+				Vector3r gradKernel = sim->gradW(xi - xj);
+				if (m_useGradientCorrection && model->getId() == "Air") {
+					// Kernel gradient correction
+                    gradKernel = m_L_air[i] * gradKernel;
+                }
+
+				acc_drag += m_j * ((dragConstant*h*m_speedSound)/(density_j + density_i)) * pi_ij * gradKernel;
 			);
 
 			acceleration += acc_drag;

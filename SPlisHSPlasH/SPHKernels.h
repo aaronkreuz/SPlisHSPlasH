@@ -394,6 +394,29 @@ namespace SPH
 			return res;
 		}
 
+		static Vector3r gradW(const Vector3r& r) {
+			Vector3r res = Vector3r::Zero();
+			const Real r2 = r.squaredNorm();
+			const Real radius2 = m_radius * m_radius;
+
+			if (r2 <= radius2) {
+				const Real r1 = sqrt(r2);
+				Vector3r gradr = r / r1; // Shouldnt this be r/(m_radius*r1)?
+				const Real r3 = r2 * r1;
+				if (2 * r1 > m_radius) {
+					res = (-3*pow(m_radius - r1, 2) * r3 + pow((m_radius-r1),3) * 3 * r2) * gradr;
+					res *= m_k;
+				}
+				else {
+					res = (-6 * pow(m_radius - r1, 2) * r3 + 2 * pow(m_radius - r1, 3) * 3*r2) * gradr;
+					res *= m_k;
+                }
+			}
+
+			return res;
+		}
+
+
 		static Real W_zero()
 		{
 			return m_W_zero;

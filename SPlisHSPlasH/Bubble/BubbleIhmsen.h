@@ -17,11 +17,13 @@ namespace SPH
 	{
 	protected:
 		std::vector<Vector3r> m_normals;
+		std::vector<Matrix3r> m_L_air; // kernel gradient correction matrix for air particles
 		// std::vector<unsigned int> m_onSurface; // Moved to simulationData
 		// std::vector<Real> m_lifetime; // Moved to simulationData
 
 		Real m_onSurfaceThresholdDensity = 0.5; // TODO: changeable
 
+		bool m_useGradientCorrection = false;
 		int m_cohesionForce = 0;
 		int m_buoyancyForce = 0;
 		int m_dragForceLiq = 0;
@@ -32,6 +34,7 @@ namespace SPH
 		void computeCohesionIhmsen(FluidModel* model);
 		void computeCohesionIhmsenKernel(FluidModel* model);
 		void computeCohesionAkinci2013(FluidModel* model);
+		void computeGradientCorrection(void);
 		void computeNormals(void);
 
 		void computeBuoyancyIhmsen(FluidModel* model);
@@ -68,6 +71,8 @@ namespace SPH
 		static int DRAG_FORCE_AIR;
 		static int ENUM_DRAG_FORCE_AIR_NONE;
 		static int ENUM_DRAG_FORCE_AIR_IHMSEN;
+
+		static int USE_GRADIENT_CORRECTION;
 
 		FORCE_INLINE Vector3r &getNormal(const unsigned int i)
 		{

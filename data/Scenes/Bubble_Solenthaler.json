@@ -1,0 +1,98 @@
+ {
+	"Configuration": 
+	{
+		"cameraPosition": [0,2,5],
+		"cameraLookat": [0,0,0],
+		"timeStepSize": 0.001,
+		"numberOfStepsPerRenderUpdate": 2,
+		"particleRadius": 0.025, 
+		"simulationMethod": 4,
+		"gravitation": [0,-9.81,0], 
+		"cflMethod": 2, 
+		"cflFactor": 0.5,
+		"cflMaxTimeStepSize": 0.005,
+		"maxIterations": 100,
+		"maxError": 0.05,
+		"maxIterationsV": 100,
+		"maxErrorV": 0.1,		
+		"stiffness": 50000,
+		"exponent": 7,
+		"velocityUpdateMethod": 0,
+		"enableDivergenceSolver": true,
+		"enableTrappedAir": false,
+		"boundaryHandlingMethod": 2
+	},
+	"Materials": [
+		{
+			"id": "Liquid",
+			"density0": 1000,
+			"viscosityMethod": 1,
+			"viscosity": 0.01,
+			"dragMethod": 0, 
+			"colorMapType": 0
+		},
+		{
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 250,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 300,
+            "renderModel": true
+        }
+	],
+	"RigidBodies": [
+		{
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,1,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [3.1, 2.1, 1.0],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true,
+			"mapInvert": true, 
+			"mapThickness": 0.0,
+			"mapResolution": [30,30,20]
+		}
+	], 
+	"FluidBlocks": [
+		{
+			"denseMode": 0,
+			"start": [-1.5, 0.0, -0.5],
+			"end": [-0.3, 0.6, 0.5],
+			"translation": [0.0, 0.0, 0.0],
+			"scale": [1, 1, 1],
+			"id": "Liquid"
+		},
+		{
+			"denseMode": 0,
+			"start": [-0.3, 0.2, -0.5],
+			"end": [0.0, 0.6, 0.5],
+			"translation": [0.0, 0.0, 0.0],
+			"scale": [1, 1, 1],
+			"id": "Liquid"
+		},
+		{
+			"denseMode": 0,
+			"start": [0.0, 0.0, -0.5],
+			"end": [1.5, 0.6, 0.5],
+			"translation": [0.0, 0.0, 0.0],
+			"scale": [1, 1, 1],
+			"id": "Liquid"
+		},
+		{
+			"denseMode": 0,
+			"start": [-0.3, 0.0, -0.5],
+			"end": [0.0, 0.2, 0.5],
+			"translation": [0.0, 0.0, 0.0],
+			"scale": [1, 1, 1],
+			"id": "Air"
+		}
+
+	]
+}
+
+
+
