@@ -183,7 +183,7 @@ for (unsigned int pid = 0; pid < nBoundaries; pid++) \
 
 namespace SPH
 {
-	enum class SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, ICSPH, PCISPHtest, DFSPHvanilla, DFSPHjs, DFSPHbubble, DFSPHbubbleOp, NumSimulationMethods};
+	enum class SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, ICSPH, PCISPHtest, DFSPHvanilla, DFSPHjs, DFSPHbubble, DFSPHbubbleOp, PCISPHbubble, NumSimulationMethods};
 	enum class BoundaryHandlingMethods { Akinci2012 = 0, Koschier2017, Bender2019, NumSimulationMethods };
 
 	/** \brief Class to manage the current simulation time and the time step size. 
@@ -226,6 +226,7 @@ namespace SPH
 
 		static int ENUM_SIMULATION_WCSPH;
 		static int ENUM_SIMULATION_PCISPH;
+		static int ENUM_SIMULATION_PCISPHBUBBLE;
 		static int ENUM_SIMULATION_PBF;
 		static int ENUM_SIMULATION_IISPH;
 		static int ENUM_SIMULATION_DFSPH;

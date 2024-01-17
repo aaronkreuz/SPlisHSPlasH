@@ -18,6 +18,16 @@ set(PCISPH_SOURCE_FILES
 	PCISPH/TimeStepPCISPH.cpp
 	)
 
+set(PCISPHbubble_HEADER_FILES
+	PCISPHbubble/SimulationDataPCISPHbubble.h
+	PCISPHbubble/TimeStepPCISPHbubble.h
+    )
+
+set(PCISPHbubble_SOURCE_FILES
+	PCISPHbubble/SimulationDataPCISPHbubble.cpp
+	PCISPHbubble/TimeStepPCISPHbubble.cpp
+    )
+
 set(PCISPHtest_HEADER_FILES
 	PCISPHtest/SimulationDataPCISPHtest.h
 	PCISPHtest/TimeStepPCISPHtest.h
@@ -296,9 +306,12 @@ add_library(SPlisHSPlasH
 	${PCISPH_HEADER_FILES}
 	${PCISPH_SOURCE_FILES}
 
+	${PCISPHbubble_HEADER_FILES}
+	${PCISPHbubble_SOURCE_FILES}
+
 	${PCISPHtest_HEADER_FILES}
 	${PCISPHtest_SOURCE_FILES}
-	
+
 	${PBF_HEADER_FILES}
 	${PBF_SOURCE_FILES}
 	
@@ -375,6 +388,8 @@ source_group("Header Files\\WCSPH" FILES ${WCSPH_HEADER_FILES})
 source_group("Source Files\\WCSPH" FILES ${WCSPH_SOURCE_FILES})
 source_group("Header Files\\PCISPH" FILES ${PCISPH_HEADER_FILES})
 source_group("Source Files\\PCISPH" FILES ${PCISPH_SOURCE_FILES})
+source_group("Header Files\\PCISPHbubble" FILES ${PCISPHbubble_HEADER_FILES})
+source_group("Source Files\\PCISPHbubble" FILES ${PCISPHbubble_SOURCE_FILES})
 source_group("Header Files\\PCISPHtest" FILES ${PCISPHtest_HEADER_FILES})
 source_group("Source Files\\PCISPHtest" FILES ${PCISPHtest_SOURCE_FILES})
 source_group("Header Files\\PBF" FILES ${PBF_HEADER_FILES})
