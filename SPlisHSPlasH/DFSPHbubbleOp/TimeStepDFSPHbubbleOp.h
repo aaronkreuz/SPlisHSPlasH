@@ -39,7 +39,6 @@ namespace SPH
 		unsigned int m_iterationsVliq;
 		unsigned int m_iterationsVair;
 
-
 		// BUBBLE related constants
 		Real m_dragConstantAir = static_cast<Real>(8.0);
 		Real m_dragConstantLiq = static_cast<Real>(3.0);
@@ -58,6 +57,9 @@ namespace SPH
 
 		Real m_vDiffThresholdMin = static_cast<Real>(5.0); // Ihmsen et al. 2012
 		Real m_vDiffThresholdMax = static_cast<Real>(20.0); // Ihmsen et al. 2012
+
+		// different maxError in pressure solver for Air phase
+		Real m_maxErrorAir;
 
 
 		//////////////////////////////////////////////////////////////////////////
@@ -109,6 +111,7 @@ namespace SPH
 		static int SOLVER_ITERATIONS_AIR;
 		static int SOLVER_ITERATIONS_V_LIQ;
 		static int SOLVER_ITERATIONS_V_AIR;
+		static int MAX_ERROR_AIR;
 
 		// trapped air
 		static int TRAPPED_AIR_APPROACH;

@@ -23,6 +23,7 @@ int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_AIR = -1;
 int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_LIQ = -1;
 int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_AIR = -1;
 int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_LIQ = -1;
+int TimeStepDFSPHbubbleOp::MAX_ERROR_AIR = -1;
 
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR_OPTIMIZATION = -1;
@@ -59,6 +60,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_iterationsVair = 0;
 	m_iterationsVliq = 0;
 	m_trappedAirApproach = 1;
+	m_maxErrorAir = 0.01;
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
@@ -171,6 +173,10 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	VDIFF_THRESHOLD_MAX = createNumericParameter("vDiffThresholdMax", "Ihmsen 2012: Max. threshold velocity difference", &m_vDiffThresholdMax);
 	setGroup(VDIFF_THRESHOLD_MAX, "Simulation|TrappedAir Extension");
 	setDescription(VDIFF_THRESHOLD_MAX, "Max. threshold velocity difference between liquid particle and its liquid neighbors for air particle generation.");
+
+	MAX_ERROR_AIR = createNumericParameter("maxErrorAir", "Max. density error(%) for air phase", &m_maxErrorAir);
+	setGroup(MAX_ERROR_AIR, "Simulation|DFSPHbubble");
+	setDescription(MAX_ERROR_AIR, "Maximal density error (%) for air phase.");
 	
 }
 
@@ -763,6 +769,7 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 		FluidModel* model = sim->getFluidModel(i);
 		const Real density0 = model->getDensity0();
 		iterations[i] = 0;
+		Real maxErr = model->getId() == "Air" ? m_maxErrorAir : m_maxError;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Perform solver iterations
@@ -774,7 +781,7 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 			pressureSolveIteration(i, avg_density_err);
 
 			// Maximal allowed density fluctuation
-			const Real eta = m_maxError * static_cast<Real>(0.01) * density0;  // maxError is given in percent
+			const Real eta = maxErr * static_cast<Real>(0.01) * density0;  // maxError is given in percent
 			chk = avg_density_err <= eta;
 
 			iterations[i]++;
