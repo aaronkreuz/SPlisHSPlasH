@@ -43,7 +43,7 @@
             "viscosityMethod": 0,
             "bubbleMethod": 1,
             "surfaceTensionMethod": 4,
-            "surfaceTension": 40.0,
+            "surfaceTension": 5.0,
             "renderModel": true
         }
     ],
@@ -54,7 +54,7 @@
 			"translation": [0,1.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [4, 3, 1],
+			"scale": [3, 3, 1],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
@@ -68,17 +68,33 @@
 		{
             "id": "Liquid",
 			"denseMode": 0,
-			"start": [-2.0, 0.0, -1.0],
-			"end": [2.0, 2.0, 0.5],
+			"start": [-1.5, 0.0, -0.5],
+			"end": [1.5, 3.0, 0.5],
 			"translation": [0.0, 0.025, 0.0],
 			"scale": [1, 1, 1]
 		},
+        {
+            "id": "Air",
+            "denseMode": 0,
+            "start": [-0.2, 0.0, -0.2],
+            "end": [0.2, 0.4, 0.2],
+            "translation": [0.0, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        },
 		{
             "id": "Air",
             "denseMode": 0,
-            "start": [-0.25, 0.0, -0.25],
-            "end": [0.25, 0.5, 0.25],
-            "translation": [0.025, 0.025, 0.0],
+            "start": [-0.3, 0.55, -0.125],
+            "end": [-0.05, 0.8, 0.125],
+            "translation": [0.0, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        },
+        {
+            "id": "Air",
+            "denseMode": 0,
+            "start": [0.1, 0.7, -0.125],
+            "end": [0.35, 0.95, 0.125],
+            "translation": [0.0, 0.025, 0.0],
             "scale": [1, 1, 1]
         }
 	]	
