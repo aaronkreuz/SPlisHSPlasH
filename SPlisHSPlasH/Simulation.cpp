@@ -34,6 +34,7 @@ int Simulation::CFL_FACTOR = -1;
 int Simulation::CFL_MIN_TIMESTEPSIZE = -1;
 int Simulation::CFL_MAX_TIMESTEPSIZE = -1;
 int Simulation::ENABLE_Z_SORT = -1;
+int Simulation::STEPS_PER_Z_SORT = -1;
 int Simulation::KERNEL_METHOD = -1;
 int Simulation::GRAD_KERNEL_METHOD = -1;
 int Simulation::ENUM_KERNEL_CUBIC = -1;
@@ -92,6 +93,8 @@ Simulation::Simulation ()
 	m_simulationIsInitialized = false;
 	m_sim2D = false;
 	m_enableZSort = true;
+	m_stepsPerZSort = 500;
+	m_counter = 0;
 
 	m_animationFieldSystem = new AnimationFieldSystem();
 	m_boundaryHandlingMethod = static_cast<int>(BoundaryHandlingMethods::Bender2019);
@@ -181,6 +184,11 @@ void Simulation::initParameters()
 	ENABLE_Z_SORT = createBoolParameter("enableZSort", "Enable z-sort", &m_enableZSort);
 	setGroup(ENABLE_Z_SORT, "Simulation|Simulation");
 	setDescription(ENABLE_Z_SORT, "Enable z-sort to improve cache hits.");
+
+	STEPS_PER_Z_SORT = createNumericParameter("enableZSort", "Simulation steps per z-sort", &m_stepsPerZSort);
+	setGroup(STEPS_PER_Z_SORT, "Simulation|Simulation");
+	setDescription(STEPS_PER_Z_SORT, "Number of simulation steps which are performed before a z-sort is applied.");
+	static_cast<UnsignedIntParameter*>(getParameter(STEPS_PER_Z_SORT))->setMinValue(1u);
 
 	ParameterBase::GetFunc<Real> getRadiusFct = std::bind(&Simulation::getParticleRadius, this);
 	ParameterBase::SetFunc<Real> setRadiusFct = std::bind(&Simulation::setParticleRadius, this, std::placeholders::_1);
@@ -536,6 +544,7 @@ void Simulation::reset()
 
 	m_animationFieldSystem->reset();
 
+	m_counter = 0;
 	performNeighborhoodSearchSort();
 
 	TimeManager::getCurrent()->setTime(0.0);
@@ -672,6 +681,14 @@ void Simulation::setSimulationMethod(const int val)
 
 void Simulation::performNeighborhoodSearch()
 {
+	if (zSortEnabled())
+	{
+		if (m_counter % m_stepsPerZSort == 0)
+		{
+			performNeighborhoodSearchSort();
+		}
+		m_counter++;
+	}
 	START_TIMING("neighborhood_search");
 	m_neighborhoodSearch->find_neighbors();
 	STOP_TIMING_AVG;
@@ -694,6 +711,7 @@ void Simulation::performNeighborhoodSearchSort()
 		BoundaryModel *bm = getBoundaryModel(i);
 		bm->performNeighborhoodSearchSort();
 	}
+	getTimeStep()->performNeighborhoodSearchSort();
 #ifdef USE_DEBUG_TOOLS
 	m_debugTools->performNeighborhoodSearchSort();
 #endif

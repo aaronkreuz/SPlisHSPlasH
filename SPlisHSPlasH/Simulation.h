@@ -200,6 +200,7 @@ namespace SPH
 		static int CFL_MIN_TIMESTEPSIZE;
 		static int CFL_MAX_TIMESTEPSIZE;
 		static int ENABLE_Z_SORT;
+		static int STEPS_PER_Z_SORT;
 
 		static int KERNEL_METHOD;
 		static int GRAD_KERNEL_METHOD;
@@ -326,6 +327,8 @@ namespace SPH
 		Real m_supportRadius;
 		bool m_sim2D;
 		bool m_enableZSort;
+		unsigned int m_stepsPerZSort;
+		unsigned int m_counter;
 		std::function<void()> m_simulationMethodChanged;		
 		int m_boundaryHandlingMethod;
 		std::string m_cachePath;
@@ -410,6 +413,8 @@ namespace SPH
 
 		bool is2DSimulation() { return m_sim2D; }
 		bool zSortEnabled() { return m_enableZSort; }
+
+		unsigned int stepsPerZSort() { return m_stepsPerZSort; }
 
 		void initKernels();
 
