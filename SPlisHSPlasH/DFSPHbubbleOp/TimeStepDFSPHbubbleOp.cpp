@@ -31,11 +31,13 @@ int TimeStepDFSPHbubbleOp::VMIN_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VT_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MIN = -1;
 int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MAX = -1;
+int TimeStepDFSPHbubbleOp::MAX_AIR_PARTICLES_PER_STEP = -1;
 
 int TimeStepDFSPHbubbleOp::TRAPPED_AIR_APPROACH = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_NONE = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_IHMSEN2011 = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012 = -1;
+int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_CAVITATION = -1;
 
 
 TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
@@ -61,6 +63,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_iterationsVliq = 0;
 	m_trappedAirApproach = 1;
 	m_maxErrorAir = 0.01;
+	m_maxAirParticlesPerTimestep = 20;
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
@@ -149,6 +152,7 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	enumParam->addEnumValue("None", ENUM_TRAPPED_AIR_APPROACH_NONE);
 	enumParam->addEnumValue("Ihmsen et al. 2011", ENUM_TRAPPED_AIR_APPROACH_IHMSEN2011);
 	enumParam->addEnumValue("Ihmsen et al. 2012", ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012);
+	enumParam->addEnumValue("Cavitation Test", ENUM_TRAPPED_AIR_APPROACH_CAVITATION);
 
 	USE_TRAPPED_AIR = createBoolParameter("enableTrappedAir", "Enable trapped air generation", &m_enableTrappedAir);
 	setGroup(USE_TRAPPED_AIR, "Simulation|TrappedAir Extension");
@@ -177,6 +181,10 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	MAX_ERROR_AIR = createNumericParameter("maxErrorAir", "Max. density error(%) for air phase", &m_maxErrorAir);
 	setGroup(MAX_ERROR_AIR, "Simulation|DFSPHbubble");
 	setDescription(MAX_ERROR_AIR, "Maximal density error (%) for air phase.");
+
+	MAX_AIR_PARTICLES_PER_STEP = createNumericParameter("maxAirParticlesPerStep", "Max. num air particles generated per step", &m_maxAirParticlesPerTimestep);
+	setGroup(MAX_AIR_PARTICLES_PER_STEP, "Simulation|TrappedAir Extension");
+	setDescription(MAX_AIR_PARTICLES_PER_STEP, "Max. number of air particles that can be generated per emitting time step.");
 	
 }
 
@@ -394,13 +402,20 @@ void TimeStepDFSPHbubbleOp::step()
 
 			if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_IHMSEN2011) {
 				for (unsigned int i = 0; i < nLiquidParticles; i++) {
-					if (emittedParticles < 20 && liquid->getParticleState(i) == ParticleState::Active) {
+					if (emittedParticles < m_maxAirParticlesPerTimestep && liquid->getParticleState(i) == ParticleState::Active) {
 						trappedAirIhmsen2011(liquidModelIndex, i, emittedParticles, indicesGen);
 					}
 				}
 			}
 			else if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012) {
 				trappedAirIhmsen2012(emittedParticles);
+			}
+			else if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_CAVITATION) {
+				for (unsigned int i = 0; i < nLiquidParticles; i++) {
+					if (emittedParticles < m_maxAirParticlesPerTimestep && liquid->getParticleState(i) == ParticleState::Active) {
+						trappedAirCavitation(liquidModelIndex, i, emittedParticles, indicesGen);
+					}
+				}
 			}
 
 			if (emittedParticles != 0)
@@ -422,6 +437,9 @@ void TimeStepDFSPHbubbleOp::step()
 	//////////////////////////////////////////////////////////////////////////
 	tm->setTime (tm->getTime() + h);
 }
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // emit air particles based on the velocity field of the liquid -> Ihmsen et al. 2011
@@ -549,6 +567,10 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles)
 	// loop over liquid particles
 	for(int i = 0; i < numLiqParticles; i++){
 
+		if (emittedParticles >= m_maxAirParticlesPerTimestep) {
+			return;
+		}
+
 		if(model->getParticleState(i) != ParticleState::Active){
 			continue;
         }
@@ -610,6 +632,55 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles)
 		// emit air particle
 		emitAirParticleFromVelocityField(emittedParticles, vi, xi);
 	}
+}
+
+// trapped air via cavitation phenomenon in low density areas. See Lugli and Zerbetto 2013: "An introduction to bubble dynamics"
+void SPH::TimeStepDFSPHbubbleOp::trappedAirCavitation(const unsigned int liquidModelIndex, const unsigned int i, unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen)
+{
+	Simulation* sim = Simulation::getCurrent();
+	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
+	FluidModel* model = sim->getFluidModel(liquidModelIndex); 	// liquid model -> naming convention for makros
+	const unsigned int numLiqParticles = model->numActiveParticles();
+	const unsigned int fluidModelIndex = liquidModelIndex;
+	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
+
+
+	// requirements
+	const Real density0 = model->getDensity0();
+	const Real density_i = model->getDensity(i);
+
+	const Real densRatio = density_i / density0;
+	
+	if (densRatio > 0.6) {
+		return; // cavitation in areas with density significantly lower than rest density
+	}
+
+	const Vector3r xi = model->getPosition(i);
+
+	const unsigned int th_onSurface = static_cast<unsigned int>(3); // required nbr of liquid particles of curr particle to be considered "onSurface"
+	unsigned int onSurfaceCount = 0; // keeping track how many liquid particles are above curr. particle
+	bool onSurface = true;
+	// additionally check if particle on surface (see Ihmsen et al. 2011)
+	forall_fluid_neighbors_in_same_phase(
+		if (!onSurface) {
+			continue;
+		}
+		if ((xj - xi).dot(grav) < 0) {
+			onSurfaceCount++;
+		}
+		if (onSurfaceCount >= th_onSurface) {
+			onSurface = false;
+		}
+	);
+
+	if (onSurface) {
+		return; // no cavitation on surface of a fluid
+	}
+
+	const Vector3r vi = model->getVelocity(i);
+
+	emitAirParticleFromVelocityField(emittedParticles, vi, xi);
+	indicesGen.push_back(i);
 }
 
 // compute state of the air particles: on surface or inside liquid

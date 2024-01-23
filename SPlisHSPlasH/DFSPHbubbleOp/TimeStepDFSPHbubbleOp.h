@@ -51,6 +51,7 @@ namespace SPH
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
 		Real m_nextEmitTime = static_cast<Real>(0.0);
+		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
 
 		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011 and 2012
 		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
@@ -91,6 +92,7 @@ namespace SPH
 		void computeOnSurfaceAir();
 		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirIhmsen2012(unsigned int& emittedParticles);
+		void trappedAirCavitation(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, Vector3r vel, Vector3r pos);
 
@@ -118,6 +120,7 @@ namespace SPH
 		static int ENUM_TRAPPED_AIR_APPROACH_NONE;
 		static int ENUM_TRAPPED_AIR_APPROACH_IHMSEN2011;
 		static int ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012;
+		static int ENUM_TRAPPED_AIR_APPROACH_CAVITATION;
 
 		static int USE_TRAPPED_AIR;
 		static int USE_TRAPPED_AIR_OPTIMIZATION;
@@ -125,6 +128,7 @@ namespace SPH
 		static int VT_TRAPPED_AIR;
 		static int VDIFF_THRESHOLD_MIN; // Ihmsen et al. 2012
 		static int VDIFF_THRESHOLD_MAX; // Ihmsen et al. 2012
+		static int MAX_AIR_PARTICLES_PER_STEP;
 
 
 
