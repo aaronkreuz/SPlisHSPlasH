@@ -22,6 +22,7 @@ namespace SPH
 		// std::vector<Real> m_lifetime; // Moved to simulationData
 
 		Real m_onSurfaceThresholdDensity = 0.5; // TODO: changeable
+		Real m_cohesionCoefficientNormal = 5.0;
 
 		bool m_useGradientCorrection = false;
 		int m_cohesionForce = 0;
@@ -33,6 +34,7 @@ namespace SPH
 
 		void computeCohesionIhmsen(FluidModel* model);
 		void computeCohesionIhmsenKernel(FluidModel* model);
+		Real cohesionKernelAdapted(const Vector3r r);
 		void computeCohesionAkinci2013(FluidModel* model);
 		void computeGradientCorrection(void);
 		void computeNormals(void);
@@ -73,6 +75,8 @@ namespace SPH
 		static int ENUM_DRAG_FORCE_AIR_IHMSEN;
 
 		static int USE_GRADIENT_CORRECTION;
+
+		static int COHESION_COEFFICIENT_NORMAL;
 
 		FORCE_INLINE Vector3r &getNormal(const unsigned int i)
 		{

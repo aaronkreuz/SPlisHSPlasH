@@ -43,7 +43,7 @@ void SimulationDataDFSPHbubbleOp::init()
 
 		if(sim->getFluidModel(i)->getId() == "Air"){
 			m_onSurfaceAir.resize(fm->numParticles(), 0);
-			m_lifetimeAir.resize(fm->numParticles(), 5.0f); // in paper: 0.7 sec.
+			m_lifetimeAir.resize(fm->numParticles(), 0.7f); // in paper: 0.7 sec.
 		}
 	}
 }
@@ -88,7 +88,7 @@ void SimulationDataDFSPHbubbleOp::reset()
 
 			if(sim->getFluidModel(i)->getId() == "Air"){
 				m_onSurfaceAir[j] = 0;
-				m_lifetimeAir[j] = 5.0f;
+				m_lifetimeAir[j] = 0.7f;
 			}
 
 			if (fm->getParticleState(i) != ParticleState::Active) {
@@ -133,7 +133,7 @@ void SimulationDataDFSPHbubbleOp::emittedParticles(FluidModel *model, const unsi
 		m_pressure_rho2[fluidModelIndex][j] = 0.0;
 		m_pressure_rho2_V[fluidModelIndex][j] = 0.0;
 		if (model->getId() == "Air"){
-			m_lifetimeAir[j] = 5.0f;
+			m_lifetimeAir[j] = 0.7f;
 		}
 	}
 }

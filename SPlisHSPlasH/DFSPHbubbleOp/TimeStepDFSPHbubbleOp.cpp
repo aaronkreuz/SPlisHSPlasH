@@ -726,6 +726,11 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 				}
 			);
 
+			if (onSurface && m_simulationData.getOnSurface(i) == 0) {
+				Vector3r& vel = model->getVelocity(i);
+				vel *= 0.1;
+            }
+			sim->getSupportRadius();
 			m_simulationData.getOnSurface(i) = onSurface;
 			Real& lifetime_i = m_simulationData.getLifetime(i);
 

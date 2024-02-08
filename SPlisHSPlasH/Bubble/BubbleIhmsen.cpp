@@ -30,6 +30,8 @@ int BubbleIhmsen::ENUM_DRAG_FORCE_AIR_IHMSEN = -1;
 
 int BubbleIhmsen::USE_GRADIENT_CORRECTION = -1;
 
+int BubbleIhmsen::COHESION_COEFFICIENT_NORMAL = -1;
+
 
 BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 	BubbleBase(model)
@@ -45,6 +47,7 @@ BubbleIhmsen::BubbleIhmsen(FluidModel *model) :
 		m_buoyancyForce = 1;
 		m_dragForceLiq = 0;
 		m_dragForceAir = 1;
+		m_cohesionCoefficientNormal = 5.0;
 	}
 	else if(model->getId() == "Liquid"){
 		m_cohesionForce = 0;
@@ -69,6 +72,10 @@ void BubbleIhmsen::initParameters()
 	BubbleBase::initParameters();
 
 	if(m_model->getId() == "Air"){
+		COHESION_COEFFICIENT_NORMAL = createNumericParameter("cohesionCoefficientNormal", "Cohesion coefficient normal", &m_cohesionCoefficientNormal);
+		setGroup(COHESION_COEFFICIENT_NORMAL, "Fluid Model|Bubble Forces");
+		setDescription(COHESION_COEFFICIENT_NORMAL, "Cohesion coefficient for the normal part of the cohesion force (only used for Akinci et al. 2013).");
+
 		COHESION_FORCE = createEnumParameter("cohesionForceType", "Cohesion force", &m_cohesionForce);
 		setGroup(COHESION_FORCE, "Fluid Model|Bubble Forces");
 		setDescription(COHESION_FORCE, "Method for the cohesion force computation.");
@@ -185,6 +192,7 @@ void BubbleIhmsen::computeCohesionIhmsen(FluidModel* model){
 		Vector3r& acceleration = model->getAcceleration(i);
 		const Vector3r& xi = model->getPosition(i);
 		Vector3r acc_cohesion = Vector3r::Zero();
+
 		forall_fluid_neighbors_in_same_phase(
 			if(model->getParticleState(neighborIndex) == ParticleState::Disabled){
 				continue;
@@ -192,7 +200,8 @@ void BubbleIhmsen::computeCohesionIhmsen(FluidModel* model){
 
 			const Real densj = model->getDensity(neighborIndex);
 			acc_cohesion += densj*(xi - xj);
-			);
+		);
+
 		acceleration -= m_cohesionCoefficient * acc_cohesion;
 	 }
 }
@@ -221,6 +230,30 @@ void BubbleIhmsen::computeCohesionIhmsenKernel(FluidModel* model){
 	 }
 }
 
+// Own Cohesion Kernel variant, constructed according to Liu and Liu 2010
+Real BubbleIhmsen::cohesionKernelAdapted(const Vector3r r)
+{
+	Simulation* sim = Simulation::getCurrent();
+	const Real h = sim->getSupportRadius();
+	const Real h2 = h*h;
+	const Real h4 = h2*h2;
+
+	const Real factor = 32.0 / (M_PI * h4 * h4 * h);
+
+	const Real dist = r.norm();
+	const Real dist3 = dist*dist*dist;
+	const Real h_r = h - (dist);
+
+	if (2 * dist > h && dist <= h) {
+		return factor * (2 * dist3 * (h_r * h_r * h_r));
+	}
+	else if (dist > 0 && 2 * dist <= h) {
+		return factor * ((-1/32)*(0.5*h - dist) * (0.5 * h - dist) * (0.5 * h - dist) + (2 * dist3* (h_r * h_r * h_r)));
+	}
+
+	return 0;
+}
+
 // See: "Versatile surface tension and adhesion for SPH fluids" Akinci et al. 2013
 void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 	Simulation* sim = Simulation::getCurrent();
@@ -243,6 +276,7 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 				continue;
 			}
 
+			// Cohesion
 			Vector3r xij = (xi-xj);
 			const Real mj = model->getMass(neighborIndex);
 			const Real& rhoj = model->getDensity(neighborIndex);
@@ -251,8 +285,9 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 
 			a_ij -= m_cohesionCoefficient * mj * (xij / xij.norm()) * CohesionKernel::W(xi-xj);
 
+			// Curvature
 			const Vector3r& nj = getNormal(neighborIndex);
-			a_ij -= m_cohesionCoefficient * (ni-nj);
+			a_ij -= m_cohesionCoefficientNormal * (ni-nj);
 
 			accel += K_ij * a_ij;
 		);
@@ -310,7 +345,6 @@ void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 	unsigned int numParticles = model->numActiveParticles();
 	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
 
-
 	// TODO: Better solution?
 	TimeStepDFSPHbubbleOp* timeStep = (TimeStepDFSPHbubbleOp*)sim->getTimeStep();
 
@@ -322,7 +356,7 @@ void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 
 			// check if particle in on the surface and if yes: compute different buoyancy
 			if(timeStep->getOnSurface(i)){
-				acceleration += grav;
+				acceleration -= 0.5*grav;
 				continue;
 			}
 
@@ -419,18 +453,24 @@ void BubbleIhmsen::computeNormals()
 			Vector3r &ni = getNormal(i);
 			ni.setZero();
 
+			// std::cout << m_model->getMass(i) << std::endl;
+
 			//////////////////////////////////////////////////////////////////////////
 			// Fluid
 			//////////////////////////////////////////////////////////////////////////
 			forall_fluid_neighbors_in_same_phase(
 				const Real density_j = m_model->getDensity(neighborIndex);
-				ni += m_model->getMass(neighborIndex) / density_j * sim->gradW(xi - xj);
-				)
-				ni = supportRadius*ni;
+				const Vector3r xij = xi - xj;
+				
+				ni += (m_model->getMass(neighborIndex) / (density_j)) * sim->gradW(xij);
+			);
+			
+			ni *= supportRadius;
 		}
 	 }
 }
 
+// !! Moved to TimeStepDFSPHbubbleOp !!
 // compute state of the air particles: on surface or inside liquid
 // void BubbleIhmsen::computeOnSurface(){
 // 	Simulation *sim = Simulation::getCurrent();
