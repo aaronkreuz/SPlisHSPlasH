@@ -51,6 +51,7 @@ namespace SPH
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
 		Real m_nextEmitTime = static_cast<Real>(0.0);
+		Real m_emitTimeDistance = static_cast<Real>(0.1);
 		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
 
 		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011 and 2012
@@ -129,6 +130,7 @@ namespace SPH
 		static int VDIFF_THRESHOLD_MIN; // Ihmsen et al. 2012
 		static int VDIFF_THRESHOLD_MAX; // Ihmsen et al. 2012
 		static int MAX_AIR_PARTICLES_PER_STEP;
+		static int EMIT_TIME_DISTANCE;
 
 
 

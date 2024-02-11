@@ -40,6 +40,7 @@ namespace SPH
 		void computeNormals(void);
 
 		void computeBuoyancyIhmsen(FluidModel* model);
+		void computeBuoyancyDisplacement(FluidModel* model);
 
 		void computeDragIhmsen(FluidModel* model);
 
@@ -65,6 +66,7 @@ namespace SPH
 		static int BUOYANCY_FORCE;
 		static int ENUM_BUOYANCY_FORCE_NONE;
 		static int ENUM_BUOYANCY_FORCE_IHMSEN;
+		static int ENUM_BUOYANCY_FORCE_DISPLACEMENT;
 
 		static int DRAG_FORCE_LIQ;
 		static int ENUM_DRAG_FORCE_LIQ_NONE;

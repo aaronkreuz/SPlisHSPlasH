@@ -19,6 +19,7 @@ int BubbleIhmsen::ENUM_USE_SURFACE_TENSION = -1;
 int BubbleIhmsen::BUOYANCY_FORCE = -1;
 int BubbleIhmsen::ENUM_BUOYANCY_FORCE_NONE = -1;
 int BubbleIhmsen::ENUM_BUOYANCY_FORCE_IHMSEN = -1;
+int BubbleIhmsen::ENUM_BUOYANCY_FORCE_DISPLACEMENT = -1;
 
 int BubbleIhmsen::DRAG_FORCE_LIQ = -1;
 int BubbleIhmsen::ENUM_DRAG_FORCE_LIQ_NONE = -1;
@@ -93,6 +94,7 @@ void BubbleIhmsen::initParameters()
 		enumParam = static_cast<EnumParameter*>(getParameter(BUOYANCY_FORCE));
 		enumParam->addEnumValue("None", ENUM_BUOYANCY_FORCE_NONE);
 		enumParam->addEnumValue("Ihmsen", ENUM_BUOYANCY_FORCE_IHMSEN);
+		enumParam->addEnumValue("Displacement", ENUM_BUOYANCY_FORCE_DISPLACEMENT);
 
 		DRAG_FORCE_AIR = createEnumParameter("dragForceTypeAir", "Drag force air", &m_dragForceAir);
 		setGroup(DRAG_FORCE_AIR, "Fluid Model|Bubble Forces");
@@ -161,6 +163,10 @@ void BubbleIhmsen::computeForces(FluidModel* model){
 	if(m_buoyancyForce == ENUM_BUOYANCY_FORCE_IHMSEN)
 	{
 		computeBuoyancyIhmsen(model);
+	}
+	else if (m_buoyancyForce == ENUM_BUOYANCY_FORCE_DISPLACEMENT)
+	{
+		computeBuoyancyDisplacement(model);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -371,6 +377,40 @@ void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 		}
 	}
 }
+
+// Experimental 
+void SPH::BubbleIhmsen::computeBuoyancyDisplacement(FluidModel* model)
+{
+	Simulation* sim = Simulation::getCurrent();
+	const unsigned int fluidModelIndex = model->getPointSetIndex();
+	unsigned int numParticles = model->numActiveParticles();
+	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
+
+	// TODO: Better solution?
+	TimeStepDFSPHbubbleOp* timeStep = (TimeStepDFSPHbubbleOp*)sim->getTimeStep();
+
+	for (int i = 0; i < numParticles; i++) {
+
+		const Real mass_i = model->getMass(i);
+		const Real density_i = model->getDensity(i);
+
+		Real volumeEstimate = mass_i / density_i;
+
+		// estimate volume of bubble of particle i
+		forall_fluid_neighbors_in_same_phase(
+			const Real mass_j = model->getMass(neighborIndex);
+			const Real density_j = model->getDensity(neighborIndex);
+
+			volumeEstimate += mass_j / density_j;
+		);
+
+		Vector3r& acceleration = model->getAcceleration(i);
+
+		acceleration -= m_kmaxBuoyancy * (1000.0 * volumeEstimate * grav);
+	}
+}
+
+
 
 
 // Standard method used in BUBBLE-paper

@@ -41,11 +41,11 @@
             "viscosityMethod": 0,
             "bubbleMethod": 1,
             "surfaceTensionMethod": 0,
-            "surfaceTension": 5.0,
+            "surfaceTension": 2.0,
             "renderModel": true,
             "cohesionCoefficient": 40.0,
             "dragConstantAir": 8.0,
-            "buoyancyMax": 6.0,
+            "buoyancyMax": 4.0,
             "buoyancyMin": 1.4,
             "cohesionForceType": 1
         }
@@ -54,10 +54,10 @@
     "RigidBodies": [
 		{
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,0.75,0],
+			"translation": [0,1.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1.0, 1.5, 0.5],
+			"scale": [1.0, 3.0, 0.5],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
@@ -134,7 +134,7 @@
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/liquidPhase_r=0.02.bgeo",
+			"particleFile": "../models/waterPillar_2m_r=0.02.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}

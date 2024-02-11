@@ -32,6 +32,7 @@ int TimeStepDFSPHbubbleOp::VT_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MIN = -1;
 int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MAX = -1;
 int TimeStepDFSPHbubbleOp::MAX_AIR_PARTICLES_PER_STEP = -1;
+int TimeStepDFSPHbubbleOp::EMIT_TIME_DISTANCE = -1;
 
 int TimeStepDFSPHbubbleOp::TRAPPED_AIR_APPROACH = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_NONE = -1;
@@ -55,6 +56,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_vMinTrappedAir = static_cast<Real>(9.0);
 	m_vtTrappedAir = static_cast<Real>(0.3);
 	m_nextEmitTime = static_cast<Real>(0.0);
+	m_emitTimeDistance = static_cast<Real>(0.1);
 	m_vDiffThresholdMin = static_cast<Real>(5.0);
 	m_vDiffThresholdMax = static_cast<Real>(20.0);
 	m_iterationsAir = 0;
@@ -185,7 +187,10 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	MAX_AIR_PARTICLES_PER_STEP = createNumericParameter("maxAirParticlesPerStep", "Max. num air particles generated per step", &m_maxAirParticlesPerTimestep);
 	setGroup(MAX_AIR_PARTICLES_PER_STEP, "Simulation|TrappedAir Extension");
 	setDescription(MAX_AIR_PARTICLES_PER_STEP, "Max. number of air particles that can be generated per emitting time step.");
-	
+
+	EMIT_TIME_DISTANCE = createNumericParameter("emitTimeDistance", "Temporal distance between trapped Air generation steps (seconds)", &m_emitTimeDistance);
+	setGroup(EMIT_TIME_DISTANCE, "Simulation|TrappedAir Extension");
+	setDescription(EMIT_TIME_DISTANCE, "Temporal distance between trapped Air generation steps (seconds)");
 }
 
 void TimeStepDFSPHbubbleOp::step()
@@ -426,7 +431,7 @@ void TimeStepDFSPHbubbleOp::step()
 				this->emittedParticles(airModel, airModel->numActiveParticles() - emittedParticles);
 				sim->getNeighborhoodSearch()->resize_point_set(airModel->getPointSetIndex(), &airModel->getPosition(0)[0], airModel->numActiveParticles());
 
-				m_nextEmitTime += 0.1;
+				m_nextEmitTime += m_emitTimeDistance;
 			}
 		}
 
