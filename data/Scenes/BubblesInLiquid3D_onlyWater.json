@@ -51,14 +51,11 @@
 			"mapResolution": [30,30,20]
 		}
 	],
-    "FluidBlocks": [
+    "FluidModels": [
 		{
-            "id": "Liquid",
-			"denseMode": 1,
-			"start": [-0.5, 0.0, -0.245],
-			"end": [0.5, 3.6, 0.245],
-			"translation": [0.0, 0.025, 0.0],
-			"scale": [1, 1, 1]
+			"particleFile": "../models/waterPillar_3m_r=0.02_buo.bgeo",
+			"translation": [0.0, 0.0, 0.0],
+            "id": "Liquid"
 		}
-	]	
+	]
 }

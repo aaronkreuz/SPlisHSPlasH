@@ -1,0 +1,136 @@
+{
+    "Configuration":
+    {
+        "pause": true,
+        "particleRadius": 0.015,
+        "colorMapType": 1,
+        "numberOfStepsPerRenderUpdate": 4,
+        "simulationMethod": 11,
+        "gravitation" : [0.0, -9.81, 0.0],
+        "cflMethod": 0,
+        "maxIterations": 100,
+        "maxError": 0.1,
+        "maxIterationsV": 100,
+        "maxErrorV": 0.1,
+        "stiffness": 50000,
+        "exponent": 7,
+        "velocityUpdateMethod": 0,
+        "enableDivergenceSolver": true,
+        "boundaryHandlingMethod": 2
+    },
+
+    "Materials": [
+		{
+			"id": "Liquid",
+			"surfaceTension": 0.2,
+			"surfaceTensionMethod": 0,		
+			"viscosity": 0.01,
+			"viscosityMethod": 1, 
+			"vorticityMethod": 0, 
+			"viscosityOmega": 0.05,
+			"inertiaInverse": 0.5,
+			"colorMapType": 0,
+            "density0": 1000.0,
+            "bubbleMethod": 1,
+            "renderModel": false
+		},
+        {
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 1.4,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 5.0,
+            "renderModel": true
+        }
+    ],
+
+    "RigidBodies": [
+		{
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,0.75,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [1.0, 1.5, 0.5],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true,
+			"mapInvert": true, 
+			"mapThickness": 0.0,
+			"mapResolution": [30,30,20]
+		}
+	],
+    "Emitters": [
+		{
+			"width": 3, 
+			"height": 3, 
+			"translation": [-0.3,0.0,0.0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 1.57,
+			"velocity": 0.5,
+			"type": 0,
+            "emitStartTime": 1.0,
+			"emitEndTime": 1.2,
+			"id": "Air"
+		},
+        {
+			"width": 2, 
+			"height": 2, 
+			"translation": [-0.1,0.0,0.0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 1.57,
+			"velocity": 0.5,
+			"type": 0,
+            "emitStartTime": 1.0,
+			"emitEndTime": 1.2,
+			"id": "Air"
+		},
+        {
+			"width": 2, 
+			"height": 2, 
+			"translation": [0.1,0.0,0.0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 1.57,
+			"velocity": 0.5,
+			"type": 0,
+            "emitStartTime": 1.0,
+			"emitEndTime": 1.2,
+			"id": "Air"
+		},
+        {
+			"width": 3, 
+			"height": 3, 
+			"translation": [0.1,0.0,0.0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 1.57,
+			"velocity": 0.5,
+			"type": 0,
+            "emitStartTime": 1.3,
+			"emitEndTime": 1.5,
+			"id": "Air"
+		},
+        {
+			"width": 2, 
+			"height": 2, 
+			"translation": [0.3,0.0,0.0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 1.57,
+			"velocity": 0.5,
+			"type": 0,
+            "emitStartTime": 1.0,
+			"emitEndTime": 1.2,
+			"id": "Air"
+		}
+	],
+    "FluidBlocks": [
+		{
+            "id": "Liquid",
+			"denseMode": 1,
+			"start": [-0.5, 0.0, -0.245],
+			"end": [0.5, 1.1, 0.245],
+			"translation": [0.0, 0.025, 0.0],
+			"scale": [1, 1, 1]
+		}
+	]	
+}

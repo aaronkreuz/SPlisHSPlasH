@@ -50,8 +50,8 @@ namespace SPH
 
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
-		Real m_nextEmitTime = static_cast<Real>(0.0);
-		Real m_emitTimeDistance = static_cast<Real>(0.1);
+		Real m_nextEmitTime = static_cast<Real>(0.0); // AK 2024
+		Real m_emitTimeDistance = static_cast<Real>(0.1); // AK 2024
 		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
 
 		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011 and 2012
@@ -60,8 +60,10 @@ namespace SPH
 		Real m_vDiffThresholdMin = static_cast<Real>(5.0); // Ihmsen et al. 2012
 		Real m_vDiffThresholdMax = static_cast<Real>(20.0); // Ihmsen et al. 2012
 
+		Real m_thresholdCavitationDensityRatio = static_cast<Real>(0.5); // AK 2024
+
 		// different maxError in pressure solver for Air phase
-		Real m_maxErrorAir;
+		Real m_maxErrorAir; // AK 2024
 
 
 		//////////////////////////////////////////////////////////////////////////
@@ -92,7 +94,7 @@ namespace SPH
 
 		void computeOnSurfaceAir();
 		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
-		void trappedAirIhmsen2012(unsigned int& emittedParticles);
+		void trappedAirIhmsen2012(unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirCavitation(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, Vector3r vel, Vector3r pos);
@@ -131,6 +133,7 @@ namespace SPH
 		static int VDIFF_THRESHOLD_MAX; // Ihmsen et al. 2012
 		static int MAX_AIR_PARTICLES_PER_STEP;
 		static int EMIT_TIME_DISTANCE;
+		static int DENSITY_RATIO_CAVITATION; // AK 2024
 
 
 

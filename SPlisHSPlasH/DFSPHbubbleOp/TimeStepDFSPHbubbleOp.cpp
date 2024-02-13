@@ -33,6 +33,7 @@ int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MIN = -1;
 int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MAX = -1;
 int TimeStepDFSPHbubbleOp::MAX_AIR_PARTICLES_PER_STEP = -1;
 int TimeStepDFSPHbubbleOp::EMIT_TIME_DISTANCE = -1;
+int TimeStepDFSPHbubbleOp::DENSITY_RATIO_CAVITATION = -1;
 
 int TimeStepDFSPHbubbleOp::TRAPPED_AIR_APPROACH = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_NONE = -1;
@@ -59,6 +60,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_emitTimeDistance = static_cast<Real>(0.1);
 	m_vDiffThresholdMin = static_cast<Real>(5.0);
 	m_vDiffThresholdMax = static_cast<Real>(20.0);
+	m_thresholdCavitationDensityRatio = static_cast<Real>(0.5);
 	m_iterationsAir = 0;
 	m_iterationsLiq = 0;
 	m_iterationsVair = 0;
@@ -191,6 +193,10 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	EMIT_TIME_DISTANCE = createNumericParameter("emitTimeDistance", "Temporal distance between trapped Air generation steps (seconds)", &m_emitTimeDistance);
 	setGroup(EMIT_TIME_DISTANCE, "Simulation|TrappedAir Extension");
 	setDescription(EMIT_TIME_DISTANCE, "Temporal distance between trapped Air generation steps (seconds)");
+
+	DENSITY_RATIO_CAVITATION = createNumericParameter("densityRatioCavitation", "Threshold density ratio for cavitation trapped air approach", &m_thresholdCavitationDensityRatio);
+	setGroup(DENSITY_RATIO_CAVITATION, "Simulation|TrappedAir Extension");
+	setDescription(DENSITY_RATIO_CAVITATION, "Threshold density ratio for cavitation trapped air approach.");
 }
 
 void TimeStepDFSPHbubbleOp::step()
@@ -247,8 +253,10 @@ void TimeStepDFSPHbubbleOp::step()
 		divergenceSolve();
 		STOP_TIMING_AVG
 	}
-	else
+	else {
 		m_iterationsV = 0;
+		m_iterationsVair = 0;
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Reset accelerations and add gravity
@@ -318,6 +326,7 @@ void TimeStepDFSPHbubbleOp::step()
 	//////////////////////////////////////////////////////////////////////////
 	// Non-pressure Forces introduced by Bubble-paper Ihmsen et al.
 	//////////////////////////////////////////////////////////////////////////
+	START_TIMING("bubbleForces");
 	if(nLiquidParticles > 0){
 		sim->getFluidModel(liquidModelIndex)->computeBubbleForces();
 	}
@@ -329,6 +338,7 @@ void TimeStepDFSPHbubbleOp::step()
 
 		sim->getFluidModel(airModelIndex)->computeBubbleForces();
 	}
+	STOP_TIMING_AVG;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Update the time step size, e.g. by using a CFL condition
@@ -395,6 +405,7 @@ void TimeStepDFSPHbubbleOp::step()
 	//////////////////////////////////////////////////////////////////////////
 	// air particle generation: Trapped Air
 	//////////////////////////////////////////////////////////////////////////
+	START_TIMING("trappedAirGeneration");
 	if (m_enableTrappedAir && nLiquidParticles > 0 && liquidModelIndex > -1) {
 		FluidModel* liquid = sim->getFluidModel(liquidModelIndex);
 		const Real t = tm->getTime();
@@ -413,7 +424,7 @@ void TimeStepDFSPHbubbleOp::step()
 				}
 			}
 			else if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012) {
-				trappedAirIhmsen2012(emittedParticles);
+				trappedAirIhmsen2012(emittedParticles, indicesGen);
 			}
 			else if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_CAVITATION) {
 				for (unsigned int i = 0; i < nLiquidParticles; i++) {
@@ -433,9 +444,12 @@ void TimeStepDFSPHbubbleOp::step()
 
 				m_nextEmitTime += m_emitTimeDistance;
 			}
+
+			indicesGen.clear();
 		}
 
 	}
+	STOP_TIMING_AVG;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compute new time
@@ -481,18 +495,19 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int liquidModelI
 			}
 
 		const Vector3r xij = xi - xj;
-		if (xij.squaredNorm() < (5.0 * diam * diam)) {
+		if (xij.squaredNorm() < (diam * diam)) {
 			isTooClose = true;
 		}
 		);
 
+		// check newly generated air particle positions
 		for (unsigned int j : indicesGen) {
 			if (isTooClose) {
 				continue;
 			}
 
 			const Vector3r xij = xi - model->getPosition(j);
-			if (xij.squaredNorm() < (5.0 * diam)) {
+			if (xij.squaredNorm() < (diam * diam)) {
 				isTooClose = true;
 			}
 		}
@@ -537,7 +552,7 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int liquidModelI
 
 
 // trapped air generation Ihmsen et al. 2012: "Unified spray, foam and air bubbles for particle-based fluids"
-void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles)
+void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen)
 {
 	const Real v_min = m_vMinTrappedAir; // min. velocity for liquid particle to generate an air particle, original: 9.0
 	const Real tMin = m_vDiffThresholdMin; // original 5.0
@@ -601,11 +616,22 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles)
 					continue;
 				}
 
-			const Vector3r xij = xi - xj;
-			if (xij.squaredNorm() < (2.0 * diam * diam)) {
-				isTooClose = true;
-			}
+				const Vector3r xij = xi - xj;
+				if (xij.squaredNorm() < (diam * diam)) {
+					isTooClose = true;
+				}
 			);
+
+			for (unsigned int k : indicesGen) {
+				if (isTooClose) {
+                    continue;
+                }
+
+                const Vector3r xik = xi - model->getPosition(k);
+				if (xik.squaredNorm() < (diam * diam)) {
+                    isTooClose = true;
+                }
+            }
 
 			if (isTooClose) {
 				// neighbor air particle too close -> skip this liquid particle
@@ -636,6 +662,7 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles)
 
 		// emit air particle
 		emitAirParticleFromVelocityField(emittedParticles, vi, xi);
+		indicesGen.push_back(i);
 	}
 }
 
@@ -656,7 +683,7 @@ void SPH::TimeStepDFSPHbubbleOp::trappedAirCavitation(const unsigned int liquidM
 
 	const Real densRatio = density_i / density0;
 	
-	if (densRatio > 0.6) {
+	if (densRatio > m_thresholdCavitationDensityRatio) {
 		return; // cavitation in areas with density significantly lower than rest density
 	}
 
@@ -665,6 +692,7 @@ void SPH::TimeStepDFSPHbubbleOp::trappedAirCavitation(const unsigned int liquidM
 	const unsigned int th_onSurface = static_cast<unsigned int>(3); // required nbr of liquid particles of curr particle to be considered "onSurface"
 	unsigned int onSurfaceCount = 0; // keeping track how many liquid particles are above curr. particle
 	bool onSurface = true;
+
 	// additionally check if particle on surface (see Ihmsen et al. 2011)
 	forall_fluid_neighbors_in_same_phase(
 		if (!onSurface) {
@@ -721,6 +749,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
 
 			volatile bool onSurface = true;
+			int liquidNeighbors = 0;
 			// looping over liquid neighbors
 			forall_fluid_neighbors_in_different_phase(
 				if(!onSurface){
@@ -729,6 +758,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 				if((xj-xi).dot(grav) < 0){
 					onSurface = false;
 				}
+				liquidNeighbors++;
 			);
 
 			if (onSurface && m_simulationData.getOnSurface(i) == 0) {
@@ -741,6 +771,10 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 
 			// lifetime update
 			if(onSurface){
+				if (liquidNeighbors <= 4 && lifetime_i > h) {
+					lifetime_i = 2*h;
+				}
+				
 				lifetime_i -= h;
 			}
 		}

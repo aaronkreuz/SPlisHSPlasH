@@ -16,7 +16,8 @@
         "exponent": 7,
         "velocityUpdateMethod": 0,
         "enableDivergenceSolver": true,
-        "boundaryHandlingMethod": 2
+        "boundaryHandlingMethod": 2,
+        "dataExportFPS": 30
     },
 
     "Materials": [
@@ -42,7 +43,7 @@
             "bubbleMethod": 1,
             "surfaceTensionMethod": 4,
             "surfaceTensionBoundary": 0.0,
-            "surfaceTension": 2.0,
+            "surfaceTension": 4.0,
             "renderModel": true,
             "cohesionCoefficient": 40.0,
             "dragConstantAir": 8.0,
@@ -135,7 +136,7 @@
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillar_3m_r=0.02.bgeo",
+			"particleFile": "../models/waterPillar_3m_r=0.02_buo.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}
