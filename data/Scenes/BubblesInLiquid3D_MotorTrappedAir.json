@@ -5,7 +5,7 @@
         "particleRadius": 0.02,
         "colorMapType": 1,
         "numberOfStepsPerRenderUpdate": 4,
-        "simulationMethod": 4,
+        "simulationMethod": 11,
         "gravitation" : [0.0, -9.81, 0.0],
         "cflMethod": 0,
         "maxIterations": 100,
@@ -16,10 +16,11 @@
         "exponent": 7,
         "velocityUpdateMethod": 0,
         "enableTrappedAir": true,
+        "trappedAirApproach": 1,
         "enableDivergenceSolver": true,
         "boundaryHandlingMethod": 2,
         "vMinTrappedAir": 8.0,
-        "maxAirParticlesPerStep": 60,
+        "maxAirParticlesPerStep": 30,
         "emitTimeDistance": 0.04,
         "dataExportFPS": 30
     },
@@ -38,7 +39,22 @@
             "density0": 1000.0,
             "bubbleMethod": 1,
             "renderModel": true
-		}
+		},
+        {
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 1.0,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 5.0,
+            "renderModel": true,
+            "cohesionCoefficient": 40.0,
+            "dragConstantAir": 8.0,
+            "buoyancyMax": 4.0,
+            "buoyancyMin": 1.4,
+            "cohesionForceType": 5
+        }
     ],
 
     "RigidBodies": [
@@ -56,28 +72,44 @@
 			"mapThickness": 0.0,
 			"mapResolution": [20,20,20]
 		},
-		{
-			"id": 2,
-			"geometryFile": "../models/torus.obj",
-			"isDynamic": 1, 
-			"density": 1000.0, 
-			"translation": [0.0,2.0,0.0],
-			"rotationAxis": [0, 0, 1],
-			"rotationAngle": 1.0,
-			"scale": [0.2, 0.2, 0.2],
-			"restitution" : 0.6,
-			"friction" : 0.2,
-			"color": [0.5, 0.2, 0.6, 1.0], 
-			"collisionObjectType": 4,
-			"collisionObjectScale": [0.2, 0.1, 0.2],
+        {
+			"id": 3,
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,0.1,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [1.0,0.1,0.2],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"density": 10000,
+			"isDynamic": true,
+			"isWall": false,
 			"mapInvert": false, 
 			"mapThickness": 0.0,
 			"mapResolution": [20,20,20]
+        }
+	],
+    "TargetVelocityMotorHingeJoints": [
+		{
+			"bodyID1": 3,
+			"bodyID2": 1,
+			"position": [0,0,0],
+            "axis": [0,1,0],
+            "targetSequence": [0,0.0,2,7.0,5,7.0,8,0.0]
 		}
+	],
+    "FluidBlocks": [
+        {
+            "id": "Air",
+            "denseMode": 0,
+            "start": [-0.1, 0.1, 0.15],
+            "end": [-0.05, 0.15, 0.2],
+            "translation": [0.0, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        }
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillarCylinder_rigidBody_r=0.02.bgeo",
+			"particleFile": "../models/waterPillarCylinderShallow_MotorScene_r=0.02.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}
