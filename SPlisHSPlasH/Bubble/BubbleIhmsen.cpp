@@ -362,7 +362,9 @@ void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 
 			// check if particle in on the surface and if yes: compute different buoyancy
 			if(timeStep->getOnSurface(i)){
-				acceleration -= 0.5*grav;
+				// TODO: Decide whether considering garvity here or not
+				// NOTE: Ihmsen oiriginal: acceleration -= grav; -> Does not work. Particles will not stick at fluid surface and fly around.
+				// acceleration -= 0.5*grav; 
 				continue;
 			}
 

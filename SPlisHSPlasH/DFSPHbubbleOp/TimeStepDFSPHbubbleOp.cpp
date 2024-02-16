@@ -2,6 +2,7 @@
 #include "SPlisHSPlasH/TimeManager.h"
 #include "SPlisHSPlasH/SPHKernels.h"
 #include <iostream>
+#include <random>
 #include "Utilities/Timing.h"
 #include "Utilities/Counting.h"
 #include "SPlisHSPlasH/Simulation.h"
@@ -61,6 +62,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_vDiffThresholdMin = static_cast<Real>(5.0);
 	m_vDiffThresholdMax = static_cast<Real>(20.0);
 	m_thresholdCavitationDensityRatio = static_cast<Real>(0.5);
+	m_numberEmittedTrappedAirParticles = 0;
 	m_iterationsAir = 0;
 	m_iterationsLiq = 0;
 	m_iterationsVair = 0;
@@ -104,6 +106,8 @@ TimeStepDFSPHbubbleOp::~TimeStepDFSPHbubbleOp(void)
 		if (model->getId() == "Air")
 			model->removeFieldByName("lifetime");
 	}
+
+	LOG_INFO << "Sum of trapped Air particles: " << m_numberEmittedTrappedAirParticles;
 }
 
 void TimeStepDFSPHbubbleOp::initParameters()
@@ -1300,6 +1304,7 @@ void TimeStepDFSPHbubbleOp::reset()
 	m_counter = 0;
 	m_iterations = 0;
 	m_iterationsV = 0;
+	m_numberEmittedTrappedAirParticles = 0;
 }
 
 void TimeStepDFSPHbubbleOp::performNeighborhoodSearch()
@@ -2175,6 +2180,15 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 		airModel->getVelocity(indexNotReuse) = vel;
 		airModel->setParticleState(indexNotReuse, ParticleState::Active);
 		airModel->setObjectId(indexNotReuse, 0); //?
+
+		// rng lifetime
+		static std::default_random_engine rng;
+		std::uniform_real_distribution<Real> lifetime(timeStepSize + m_eps, 1.0);
+
+		Real lifetime_i = lifetime(rng);
+		m_simulationData.setLifetime(indexNotReuse, lifetime_i);
+
 		numEmittedParticles++;
+		m_numberEmittedTrappedAirParticles++;
 	}
 }
