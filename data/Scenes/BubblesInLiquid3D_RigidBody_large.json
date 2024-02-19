@@ -62,7 +62,7 @@
 			"translation": [0,2.0,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [3.0, 4.0, 1.0],
+			"scale": [3.0, 4.0, 3.0],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
@@ -73,7 +73,7 @@
 		{
 			"id": 2,
 			"geometryFile": "../models/torus.obj",
-			"isDynamic": 1, 
+			"isDynamic": false, 
 			"density": 1000.0, 
 			"translation": [0.2,1.5,0.0],
 			"rotationAxis": [0, 0, 1],
@@ -93,8 +93,8 @@
         {
             "id": "Liquid",
             "denseMode": 0,
-            "start": [-1.0, 0.1, -1.0],
-            "end": [1.0, 3.0, 1.0],
+            "start": [-2.0, 0.1, -2.0],
+            "end": [2.0, 3.0, 2.0],
             "translation": [0.0, 0.0, 0.0],
             "scale": [1, 1, 1]
         },
