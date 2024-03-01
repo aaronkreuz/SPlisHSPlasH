@@ -19,15 +19,16 @@
         "enableDivergenceSolver": true,
         "boundaryHandlingMethod": 2,
         "vMinTrappedAir": 8.0,
-        "maxAirParticlesPerStep": 30,
-        "emitTimeDistance": 0.04
+        "maxAirParticlesPerStep": 80,
+        "emitTimeDistance": 0.04,
+        "dataExportFPS": 30
     },
 
     "Materials": [
 		{
 			"id": "Liquid",
 			"surfaceTension": 0.2,
-			"surfaceTensionMethod": 0,		
+			"surfaceTensionMethod": 4,		
 			"viscosity": 0.01,
 			"viscosityMethod": 1, 
 			"vorticityMethod": 0, 
@@ -64,40 +65,34 @@
 			"rotationAngle": 0,
 			"scale": [3.0, 4.0, 3.0],
 			"color": [0.1, 0.4, 0.6, 1.0], 
+            "collisionObjectType": 3,
+            "invertSDF": true,
+			"mapInvert": true, 
 			"isDynamic": false,
 			"isWall": true,
-			"mapInvert": true, 
 			"mapThickness": 0.0,
-			"mapResolution": [20,20,20]
+			"mapResolution": [100,100,100]
 		},
 		{
 			"id": 2,
 			"geometryFile": "../models/torus.obj",
-			"isDynamic": false, 
+			"isDynamic": true, 
 			"density": 1000.0, 
-			"translation": [0.2,1.5,0.0],
+			"translation": [0.2,3.5,0.0],
 			"rotationAxis": [0, 0, 1],
 			"rotationAngle": 1.0,
-			"scale": [0.2, 0.2, 0.2],
+			"scale": [0.4, 0.4, 0.4],
 			"restitution" : 0.6,
 			"friction" : 0.2,
 			"color": [0.5, 0.2, 0.6, 1.0], 
 			"collisionObjectType": 4,
-			"collisionObjectScale": [0.2, 0.1, 0.2],
+			"collisionObjectScale": [0.4, 0.4, 0.4],
 			"mapInvert": false, 
 			"mapThickness": 0.0,
 			"mapResolution": [20,20,20]
 		}
 	],
     "FluidBlocks": [
-        {
-            "id": "Liquid",
-            "denseMode": 0,
-            "start": [-2.0, 0.1, -2.0],
-            "end": [2.0, 3.0, 2.0],
-            "translation": [0.0, 0.0, 0.0],
-            "scale": [1, 1, 1]
-        },
         {
             "id": "Air",
             "denseMode": 0,
@@ -106,5 +101,11 @@
             "translation": [0.0, 0.025, 0.0],
             "scale": [1, 1, 1]
         }
-	]
-}
+	],
+    "FluidModels": [
+		{
+			"particleFile": "../models/waterPillarCylinder_large_r=0.02_volumeMap.bgeo",
+			"translation": [0.0, 0.0, 0.0],
+            "id": "Liquid"
+		}
+	]}
