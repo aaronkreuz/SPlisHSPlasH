@@ -1,0 +1,106 @@
+{
+    "Configuration":
+    {
+        "pause": true,
+        "particleRadius": 0.02,
+        "colorMapType": 1,
+        "numberOfStepsPerRenderUpdate": 4,
+        "simulationMethod": 11,
+        "gravitation" : [0.0, -9.81, 0.0],
+        "cflMethod": 0,
+        "maxIterations": 100,
+        "maxError": 0.1,
+        "maxIterationsV": 100,
+        "maxErrorV": 0.1,
+        "stiffness": 50000,
+        "exponent": 7,
+        "velocityUpdateMethod": 0,
+        "enableTrappedAir": false,
+        "trappedAirApproach": 1,
+        "enableDivergenceSolver": true,
+        "boundaryHandlingMethod": 2,
+        "vMinTrappedAir": 6.0,
+        "maxAirParticlesPerStep": 30,
+        "emitTimeDistance": 0.04,
+        "dataExportFPS": 30
+    },
+
+    "Materials": [
+		{
+			"id": "Liquid",
+			"surfaceTension": 0.2,
+			"surfaceTensionMethod": 4,		
+			"viscosity": 0.01,
+			"viscosityMethod": 1, 
+			"vorticityMethod": 0, 
+			"viscosityOmega": 0.05,
+			"inertiaInverse": 0.5,
+			"colorMapType": 0,
+            "density0": 1000.0,
+            "bubbleMethod": 1,
+            "renderModel": true
+		},
+        {
+            "id": "Air",
+            "colorMapType": 0,
+            "density0": 1.0,
+            "viscosityMethod": 0,
+            "bubbleMethod": 1,
+            "surfaceTensionMethod": 4,
+            "surfaceTension": 5.0,
+            "renderModel": true,
+            "cohesionCoefficient": 40.0,
+            "dragConstantAir": 8.0,
+            "buoyancyMax": 4.0,
+            "buoyancyMin": 1.4,
+            "cohesionForceType": 5
+        }
+    ],
+
+    "RigidBodies": [
+		{
+            "id": 1,
+			"geometryFile": "../models/cylinder.obj",
+			"translation": [0,3.0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [2.0, 6.0, 2.0],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true,
+			"mapInvert": true, 
+			"mapThickness": 0.0,
+			"mapResolution": [50,50,50]
+		}
+	],
+    "FluidBlocks": [
+        {
+            "id": "Air",
+            "denseMode": 0,
+            "start": [-0.1, 0.1, 0.15],
+            "end": [-0.05, 0.15, 0.2],
+            "translation": [0.0, 0.025, 0.0],
+            "scale": [1, 1, 1]
+        }
+	],
+    "FluidModels": [
+		{
+			"particleFile": "../models/waterPillarCylinder_PoolInfill_r=0.02_large.bgeo",
+			"translation": [0.0, 0.0, 0.0],
+            "id": "Liquid"
+		}
+	],
+    "Emitters": [
+        {
+            "id": "Liquid",
+            "width": 5, 
+            "translation": [-1.5,4.5,0],
+            "rotationAxis": [0, 1, 0],
+            "rotationAngle": 0,
+            "velocity": 2,	
+            "emitStartTime": 3.0,
+            "emitEndTime": 8.0,
+            "type": 1
+        }
+    ]
+}
