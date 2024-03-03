@@ -29,7 +29,7 @@
             0.0
         ],
         "kernel": 4,
-        "maxAirParticlesPerStep": 80,
+        "maxAirParticlesPerStep": 100,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 0.009999999776482582,
         "maxErrorV": 0.10000000149011612,
@@ -44,7 +44,7 @@
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": -1.0,
+        "stopAt": 12.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
@@ -140,7 +140,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 5.0,
+            "surfaceTension": 8.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,
@@ -157,6 +157,11 @@
     ],
     "RigidBodies": [
         {
+            "collisionObjectScale": [
+                3.0,
+                5.0,
+                3.0
+            ],
             "collisionObjectType": 3,
             "color": [
                 0.1,
@@ -184,12 +189,12 @@
             ],
             "scale": [
                 3.0,
-                4.0,
+                5.0,
                 3.0
             ],
             "translation": [
                 0,
-                2.0,
+                2.5,
                 0
             ]
         },
