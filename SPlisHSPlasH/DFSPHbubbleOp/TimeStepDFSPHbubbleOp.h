@@ -50,7 +50,7 @@ namespace SPH
 
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
-		Real m_nextEmitTime = static_cast<Real>(0.0); // AK 2024
+		Real m_nextEmitTime = static_cast<Real>(0.1); // AK 2024: avoid emitting in the first timestep
 		Real m_emitTimeDistance = static_cast<Real>(0.1); // AK 2024
 		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
 

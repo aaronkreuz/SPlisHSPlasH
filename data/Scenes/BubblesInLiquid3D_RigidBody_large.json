@@ -17,7 +17,7 @@
         "velocityUpdateMethod": 0,
         "enableTrappedAir": true,
         "enableDivergenceSolver": true,
-        "boundaryHandlingMethod": 2,
+        "boundaryHandlingMethod": 0,
         "vMinTrappedAir": 8.0,
         "maxAirParticlesPerStep": 80,
         "emitTimeDistance": 0.04,
@@ -105,7 +105,7 @@
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillarCylinder_large_r=0.02_volumeMap.bgeo",
+			"particleFile": "../models/waterPillarCylinder_large_r=0.02_particleBoundary.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}

@@ -1,6 +1,6 @@
 {
     "Configuration": {
-        "boundaryHandlingMethod": 2,
+        "boundaryHandlingMethod": 0,
         "cflFactor": 0.5,
         "cflMaxTimeStepSize": 0.004999999888241291,
         "cflMethod": 0,
@@ -8,7 +8,7 @@
         "colorMapType": 1,
         "dataExportFPS": 30.0,
         "densityRatioCavitation": 0.5,
-        "emitTimeDistance": 0.03999999910593033,
+        "emitTimeDistance": 0.03500000014901161,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
         "enablePartioExport": true,
@@ -29,7 +29,7 @@
             0.0
         ],
         "kernel": 4,
-        "maxAirParticlesPerStep": 100,
+        "maxAirParticlesPerStep": 150,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 0.009999999776482582,
         "maxErrorV": 0.10000000149011612,
@@ -44,12 +44,12 @@
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 12.0,
+        "stopAt": 10.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
         "vDiffThresholdMin": 5.0,
-        "vMinTrappedAir": 8.0,
+        "vMinTrappedAir": 7.0,
         "velocityUpdateMethod": 0,
         "vtTrappedAir": 0.30000001192092896
     },
@@ -82,7 +82,7 @@
     "FluidModels": [
         {
             "id": "Liquid",
-            "particleFile": "../models/waterPillarCylinder_large_r=0.02_volumeMap.bgeo",
+            "particleFile": "../models/waterPillarCylinder_large_r=0.02_particleBoundary.bgeo",
             "translation": [
                 0.0,
                 0.0,
@@ -140,7 +140,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 8.0,
+            "surfaceTension": 5.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,

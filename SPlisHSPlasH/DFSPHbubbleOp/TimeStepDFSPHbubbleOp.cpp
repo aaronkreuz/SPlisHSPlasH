@@ -57,7 +57,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_maxErrorV = static_cast<Real>(0.1);
 	m_vMinTrappedAir = static_cast<Real>(9.0);
 	m_vtTrappedAir = static_cast<Real>(0.3);
-	m_nextEmitTime = static_cast<Real>(0.0);
+	m_nextEmitTime = static_cast<Real>(0.1);
 	m_emitTimeDistance = static_cast<Real>(0.1);
 	m_vDiffThresholdMin = static_cast<Real>(5.0);
 	m_vDiffThresholdMax = static_cast<Real>(20.0);
