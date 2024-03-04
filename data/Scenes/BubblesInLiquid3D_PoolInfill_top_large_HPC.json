@@ -29,7 +29,7 @@
             0.0
         ],
         "kernel": 4,
-        "maxAirParticlesPerStep": 100,
+        "maxAirParticlesPerStep": 150,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 0.009999999776482582,
         "maxErrorV": 0.10000000149011612,
@@ -71,7 +71,7 @@
             ],
             "type": 1,
             "velocity": 2,
-            "width": 5
+            "width": 7
         }
     ],
     "FluidBlocks": [
@@ -161,7 +161,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 5.0,
+            "surfaceTension": 8.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,

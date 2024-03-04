@@ -93,7 +93,7 @@
     "Emitters": [
         {
             "id": "Liquid",
-            "width": 5, 
+            "width": 7, 
             "translation": [-1.5,4.5,0],
             "rotationAxis": [0, 1, 0],
             "rotationAngle": 0,
