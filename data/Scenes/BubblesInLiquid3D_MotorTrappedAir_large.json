@@ -61,16 +61,16 @@
 		{
             "id": 1,
 			"geometryFile": "../models/cylinder.obj",
-			"translation": [0,1.5,0],
+			"translation": [0,2.0,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1.0, 3.0, 1.0],
+			"scale": [3.0, 4.0, 3.0],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
 			"mapInvert": true, 
 			"mapThickness": 0.0,
-			"mapResolution": [20,20,20]
+			"mapResolution": [100,100,100]
 		},
         {
 			"id": 3,
@@ -78,14 +78,14 @@
 			"translation": [0,0.1,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1.0,0.1,0.2],
+			"scale": [2.0,0.2,0.4],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"density": 10000,
 			"isDynamic": true,
 			"isWall": false,
 			"mapInvert": false, 
 			"mapThickness": 0.0,
-			"mapResolution": [20,20,20]
+			"mapResolution": [40,40,40]
         }
 	],
     "TargetVelocityMotorHingeJoints": [
@@ -109,9 +109,9 @@
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillarCylinderShallow_MotorScene_r=0.02.bgeo",
+			"particleFile": "../models/waterPillarCylinder_MotorScene_r=0.02_large.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}
-	]
+    ]
 }
