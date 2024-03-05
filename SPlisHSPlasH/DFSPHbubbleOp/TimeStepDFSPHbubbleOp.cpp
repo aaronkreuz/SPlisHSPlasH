@@ -770,13 +770,14 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 				}
 			);
 
+			bool isolated = false; // isolated regarding air neighbors, not to mix up with 'liquidNeighbors'
 			if (!onSurface) {
 				const Real m_onSurfaceThresholdDensity = 0.3 * model->getDensity0(); // 0.5 * rest density
 
 				// WARNING: This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
 				// if(density_i > m_onSurfaceThresholdDensity){
 				if (density_i < m_onSurfaceThresholdDensity) {
-					onSurface = true;
+					isolated = true;
 				}
 			}
 			// if (onSurface && onSurface_i == 0) {
@@ -788,7 +789,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			Real& lifetime_i = m_simulationData.getLifetime(i);
 
 			// lifetime update
-			if(onSurface){
+			if(onSurface || isolated){
 				if (liquidNeighbors < 3 && lifetime_i > h) {
 					lifetime_i -= 3*h;
 				}
