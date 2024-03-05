@@ -25,6 +25,7 @@ int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_LIQ = -1;
 int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_AIR = -1;
 int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_LIQ = -1;
 int TimeStepDFSPHbubbleOp::MAX_ERROR_AIR = -1;
+int TimeStepDFSPHbubbleOp::SURFACE_THRESHOLD_DENSITY_RATIO = -1;
 
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR_OPTIMIZATION = -1;
@@ -69,7 +70,8 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_iterationsVliq = 0;
 	m_trappedAirApproach = 1;
 	m_maxErrorAir = 0.01;
-	m_maxAirParticlesPerTimestep = 20;
+	m_maxAirParticlesPerTimestep = 30;
+	m_onSurfaceThresholdDensity = 0.3;
 
 	// add particle fields - then they can be used for the visualization and export
 	Simulation *sim = Simulation::getCurrent();
@@ -201,6 +203,12 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	DENSITY_RATIO_CAVITATION = createNumericParameter("densityRatioCavitation", "Threshold density ratio for cavitation trapped air approach", &m_thresholdCavitationDensityRatio);
 	setGroup(DENSITY_RATIO_CAVITATION, "Simulation|TrappedAir Extension");
 	setDescription(DENSITY_RATIO_CAVITATION, "Threshold density ratio for cavitation trapped air approach.");
+
+	SURFACE_THRESHOLD_DENSITY_RATIO = createNumericParameter("onSurfaceThresholdDensityRatio", "Threshold density ratio of rest-density for onSurface state", &m_onSurfaceThresholdDensity);
+    setGroup(SURFACE_THRESHOLD_DENSITY_RATIO, "Simulation|DFSPHbubble");
+    setDescription(SURFACE_THRESHOLD_DENSITY_RATIO, "Threshold density ratio of rest-density for onSurface state.");
+
+
 }
 
 void TimeStepDFSPHbubbleOp::step()
@@ -735,19 +743,15 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 	#pragma omp parallel default(shared)
 	{
 		#pragma omp for schedule(static)
-		for(int i = 0; i < numParticles; i++)
+		for (int i = 0; i < numParticles; i++)
 		{
-			if(model->getParticleState(i) == ParticleState::Disabled){
+			if (model->getParticleState(i) == ParticleState::Disabled) {
 				continue;
 			}
 
 			const Real density_i = model->getDensity(i);
 			const Vector3r& xi = model->getPosition(i);
-
-			// This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
-			// if(density_i > m_onSurfaceThresholdDensity){
-			// 	m_onSurface[i] = 1;
-			// }
+			unsigned int& onSurface_i = m_simulationData.getOnSurface(i);
 
 			// look for number of liquid particle neighbors of the air particle
 			// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
@@ -756,27 +760,37 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			int liquidNeighbors = 0;
 			// looping over liquid neighbors
 			forall_fluid_neighbors_in_different_phase(
-				if(!onSurface){
+				liquidNeighbors++;
+
+				if (!onSurface) {
 					continue;
 				}
-				if((xj-xi).dot(grav) < 0){
+				if ((xj - xi).dot(grav) < 0) {
 					onSurface = false;
 				}
-				liquidNeighbors++;
 			);
 
-			if (onSurface && m_simulationData.getOnSurface(i) == 0) {
-				Vector3r& vel = model->getVelocity(i);
-				vel *= 0.1;
-            }
-			sim->getSupportRadius();
-			m_simulationData.getOnSurface(i) = onSurface;
+			if (!onSurface) {
+				const Real m_onSurfaceThresholdDensity = 0.3 * model->getDensity0(); // 0.5 * rest density
+
+				// WARNING: This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
+				// if(density_i > m_onSurfaceThresholdDensity){
+				if (density_i < m_onSurfaceThresholdDensity) {
+					onSurface = true;
+				}
+			}
+			// if (onSurface && onSurface_i == 0) {
+			// 	Vector3r& vel = model->getVelocity(i);
+			// 	vel *= 0.1;
+            // }
+
+			onSurface_i = onSurface;
 			Real& lifetime_i = m_simulationData.getLifetime(i);
 
 			// lifetime update
 			if(onSurface){
-				if (liquidNeighbors <= 4 && lifetime_i > h) {
-					lifetime_i = 2*h;
+				if (liquidNeighbors < 3 && lifetime_i > h) {
+					lifetime_i -= 3*h;
 				}
 				
 				lifetime_i -= h;

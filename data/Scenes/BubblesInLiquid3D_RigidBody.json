@@ -18,16 +18,17 @@
         "enableTrappedAir": true,
         "enableDivergenceSolver": true,
         "boundaryHandlingMethod": 2,
-        "vMinTrappedAir": 8.0,
-        "maxAirParticlesPerStep": 30,
-        "emitTimeDistance": 0.04
+        "vMinTrappedAir": 3.0,
+        "maxAirParticlesPerStep": 1000,
+        "emitTimeDistance": 0.03,
+        "maxErrorAir": 0.1
     },
 
     "Materials": [
 		{
 			"id": "Liquid",
 			"surfaceTension": 0.2,
-			"surfaceTensionMethod": 0,		
+			"surfaceTensionMethod": 4,		
 			"viscosity": 0.01,
 			"viscosityMethod": 1, 
 			"vorticityMethod": 0, 

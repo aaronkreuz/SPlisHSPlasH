@@ -20,8 +20,8 @@
         "enableDivergenceSolver": true,
         "boundaryHandlingMethod": 2,
         "vMinTrappedAir": 8.0,
-        "maxAirParticlesPerStep": 30,
-        "emitTimeDistance": 0.04,
+        "maxAirParticlesPerStep": 200,
+        "emitTimeDistance": 0.035,
         "dataExportFPS": 30
     },
 

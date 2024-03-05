@@ -47,6 +47,7 @@ namespace SPH
 		Real m_minBouyancy = static_cast<Real>(2.4);
 		const Real m_cohesionConstant = static_cast<Real>(12.0);
 		const Real m_surfaceTensionConstant = static_cast<Real>(1.0);
+		Real m_onSurfaceThresholdDensity = static_cast<Real>(0.3);
 
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
@@ -119,6 +120,7 @@ namespace SPH
 		static int SOLVER_ITERATIONS_V_LIQ;
 		static int SOLVER_ITERATIONS_V_AIR;
 		static int MAX_ERROR_AIR;
+		static int SURFACE_THRESHOLD_DENSITY_RATIO;
 
 		// trapped air
 		static int TRAPPED_AIR_APPROACH;
