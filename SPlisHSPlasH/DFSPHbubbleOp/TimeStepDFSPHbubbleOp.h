@@ -138,6 +138,7 @@ namespace SPH
 		static int MAX_AIR_PARTICLES_PER_STEP;
 		static int EMIT_TIME_DISTANCE;
 		static int DENSITY_RATIO_CAVITATION; // AK 2024
+		static int NEXT_EMIT_TIME; // AK 2024
 
 
 

@@ -36,6 +36,7 @@ int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MAX = -1;
 int TimeStepDFSPHbubbleOp::MAX_AIR_PARTICLES_PER_STEP = -1;
 int TimeStepDFSPHbubbleOp::EMIT_TIME_DISTANCE = -1;
 int TimeStepDFSPHbubbleOp::DENSITY_RATIO_CAVITATION = -1;
+int TimeStepDFSPHbubbleOp::NEXT_EMIT_TIME = -1;
 
 int TimeStepDFSPHbubbleOp::TRAPPED_AIR_APPROACH = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_NONE = -1;
@@ -188,6 +189,11 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	setGroup(VDIFF_THRESHOLD_MAX, "Simulation|TrappedAir Extension");
 	setDescription(VDIFF_THRESHOLD_MAX, "Max. threshold velocity difference between liquid particle and its liquid neighbors for air particle generation.");
 
+	NEXT_EMIT_TIME = createNumericParameter("nextEmitTime", "Next emit time trappedAir", &m_nextEmitTime);
+	setGroup(NEXT_EMIT_TIME, "Simulation|TrappedAir Extension");
+	setDescription(NEXT_EMIT_TIME, "Next emit time for trapped air generation.");
+	getParameter(NEXT_EMIT_TIME)->setReadOnly(true);
+
 	MAX_ERROR_AIR = createNumericParameter("maxErrorAir", "Max. density error(%) for air phase", &m_maxErrorAir);
 	setGroup(MAX_ERROR_AIR, "Simulation|DFSPHbubble");
 	setDescription(MAX_ERROR_AIR, "Maximal density error (%) for air phase.");
@@ -270,6 +276,8 @@ void TimeStepDFSPHbubbleOp::step()
 		m_iterationsVair = 0;
 	}
 
+
+
 	//////////////////////////////////////////////////////////////////////////
 	// Reset accelerations and add gravity
 	//////////////////////////////////////////////////////////////////////////
@@ -344,7 +352,7 @@ void TimeStepDFSPHbubbleOp::step()
 	}
 	if(nAirParticles > 0){
 		//////////////////////////////////////////////////////////////////////////
-		// Compute onSurface state and lifetime updates for air particles
+		// Compute onSurface state and lifetime updates for air particles + foam deletion
 		//////////////////////////////////////////////////////////////////////////
 		computeOnSurfaceAir();
 
@@ -488,7 +496,7 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int liquidModelI
 	const Vector3r xi = model->getPosition(i);
 	const Vector3r vi = model->getVelocity(i);
 
-	if(vi.squaredNorm() < m_vMinTrappedAir){
+	if(vi.squaredNorm() < (m_vMinTrappedAir * m_vMinTrappedAir)){
 		return;
 	}
 
