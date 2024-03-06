@@ -1322,7 +1322,6 @@ void TimeStepDFSPHbubbleOp::divergenceSolveIteration(const unsigned int fluidMod
 void TimeStepDFSPHbubbleOp::reset()
 {
 	TimeStep::reset();
-	m_nextEmitTime = 0.0;
 	m_simulationData.reset();
 	m_counter = 0;
 	m_iterations = 0;
