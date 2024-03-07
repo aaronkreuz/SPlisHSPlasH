@@ -79,6 +79,16 @@ set(DFSPH_BUBBLE_OP_SOURCE_FILES
 	DFSPHbubbleOp/SimulationDataDFSPHbubbleOp.cpp
 	DFSPHbubbleOp/TimeStepDFSPHbubbleOp.cpp
     )
+
+set(DFSPH_BUBBLE_EXPERIMENTAL_HEADER_FILES
+	DFSPHbubbleExperimental/SimulationDataDFSPHbubbleExperimental.h
+	DFSPHbubbleExperimental/TimeStepDFSPHbubbleExperimental.h
+    )
+
+set(DFSPH_BUBBLE_EXPERIMENTAL_SOURCE_FILES
+	DFSPHbubbleExperimental/SimulationDataDFSPHbubbleExperimental.cpp
+	DFSPHbubbleExperimental/TimeStepDFSPHbubbleExperimental.cpp
+    )
 	
 set(PF_HEADER_FILES
 	PF/SimulationDataPF.h
@@ -323,6 +333,9 @@ add_library(SPlisHSPlasH
 
 	${DFSPH_BUBBLE_OP_HEADER_FILES}
 	${DFSPH_BUBBLE_OP_SOURCE_FILES}
+
+	${DFSPH_BUBBLE_EXPERIMENTAL_HEADER_FILES}
+	${DFSPH_BUBBLE_EXPERIMENTAL_SOURCE_FILES}
 	
 	${PF_HEADER_FILES}
 	${PF_SOURCE_FILES}
@@ -400,6 +413,8 @@ source_group("Header Files\\DFSPH" FILES ${DFSPH_HEADER_FILES})
 source_group("Source Files\\DFSPH" FILES ${DFSPH_SOURCE_FILES})
 source_group("Header Files\\DFSPHbubbleOp" FILES ${DFSPH_BUBBLE_OP_HEADER_FILES})
 source_group("Source Files\\DFSPHbubbleOp" FILES ${DFSPH_BUBBLE_OP_SOURCE_FILES})
+source_group("Header Files\\DFSPHbubbleExperimental" FILES ${DFSPH_BUBBLE_EXPERIMENTAL_HEADER_FILES})
+source_group("Source Files\\DFSPHbubbleExperimental" FILES ${DFSPH_BUBBLE_EXPERIMENTAL_SOURCE_FILES})
 source_group("Header Files\\PF" FILES ${PF_HEADER_FILES})
 source_group("Source Files\\PF" FILES ${PF_SOURCE_FILES})
 source_group("Header Files\\ICSPH" FILES ${ICSPH_HEADER_FILES})

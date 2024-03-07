@@ -42,10 +42,10 @@
         {
             "id": "Air2",
             "colorMapType": 0,
-            "density0": 1000.0,
+            "density0": 400.0,
             "viscosityMethod": 0,
             "surfaceTensionMethod": 4,
-            "surfaceTension": 0.2,
+            "surfaceTension": 3.0,
             "renderModel": true
         }
     ],
@@ -67,20 +67,17 @@
 		}
 	],
     "FluidBlocks": [
-        {
-            "id": "Air2",
-            "denseMode": 0,
-            "start": [-0.125, 0.0, -0.125],
-            "end": [0.125, 0.25, 0.125],
-            "translation": [0.0, 0.0, 0.0],
-            "scale": [1, 1, 1]
-        }   
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillarCube_solenthaler_experimental_r=0.02.bgeo",
+			"particleFile": "../models/waterPillarCube_solenthaler_experimental_r=0.02_0.4sec.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
-		}
+		},
+        {
+            "particleFile": "../models/airBubble_solenthaler_experimental_r=0.02_0.4sec.bgeo",
+            "translation": [0.0, 0.0, 0.0],
+            "id": "Air2"
+        }
 	]
 }
