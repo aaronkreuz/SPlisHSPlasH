@@ -217,6 +217,37 @@ void TimeStepDFSPHbubbleExperimental::initParameters()
 
 }
 
+void SPH::TimeStepDFSPHbubbleExperimental::init()
+{
+	Simulation* sim = Simulation::getCurrent();
+	TimeManager* tm = TimeManager::getCurrent();
+	const Real h = tm->getTimeStepSize();
+	const unsigned int nModels = sim->numberOfFluidModels();
+
+	TimeStep::init();
+
+	// initial neighborhood search
+	performNeighborhoodSearch();
+
+	//////////////////////////////////////////////////////////////////////////
+	// compute densities
+	//////////////////////////////////////////////////////////////////////////
+	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
+		computeDensitiesForSamePhaseAVX(fluidModelIndex);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Compute the factor alpha_i for all particles i
+	// using the equation (11) in [BK17]
+	//////////////////////////////////////////////////////////////////////////
+	START_TIMING("computeDFSPHFactor_init");
+	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++) {
+		computeDFSPHFactor(fluidModelIndex);
+	}
+	STOP_TIMING_AVG;
+
+
+}
+
 void TimeStepDFSPHbubbleExperimental::step()
 {
 	Simulation *sim = Simulation::getCurrent();
@@ -224,10 +255,10 @@ void TimeStepDFSPHbubbleExperimental::step()
 	const Real h = tm->getTimeStepSize();
 	const unsigned int nModels = sim->numberOfFluidModels();
 
-	//////////////////////////////////////////////////////////////////////////
-	// search the neighbors for all particles
-	//////////////////////////////////////////////////////////////////////////
-	performNeighborhoodSearch();
+	// //////////////////////////////////////////////////////////////////////////
+	// // search the neighbors for all particles
+	// //////////////////////////////////////////////////////////////////////////
+	// performNeighborhoodSearch();
 
 #ifdef USE_PERFORMANCE_OPTIMIZATION
 	//////////////////////////////////////////////////////////////////////////
@@ -246,35 +277,21 @@ void TimeStepDFSPHbubbleExperimental::step()
 	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
 		computeDensityAndGradient();
 
-	//////////////////////////////////////////////////////////////////////////
-	// compute densities
-	//////////////////////////////////////////////////////////////////////////
-	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
-		computeDensitiesForSamePhaseAVX(fluidModelIndex);
+	// //////////////////////////////////////////////////////////////////////////
+	// // compute densities
+	// //////////////////////////////////////////////////////////////////////////
+	// for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++)
+	// 	computeDensitiesForSamePhaseAVX(fluidModelIndex);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compute the factor alpha_i for all particles i
 	// using the equation (11) in [BK17]
 	//////////////////////////////////////////////////////////////////////////
-	START_TIMING("computeDFSPHFactor");
-	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
-		computeDFSPHFactor(fluidModelIndex);
-	}
-	STOP_TIMING_AVG;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Perform divergence solve (see Algorithm 2 in [BK17])
-	//////////////////////////////////////////////////////////////////////////
-	if (m_enableDivergenceSolver)
-	{
-		START_TIMING("divergenceSolve");
-		divergenceSolve();
-		STOP_TIMING_AVG
-	}
-	else {
-		m_iterationsV = 0;
-		m_iterationsVair = 0;
-	}
+	// START_TIMING("computeDFSPHFactor");
+	// for (unsigned int fluidModelIndex = 0; fluidModelIndex < nModels; fluidModelIndex++){
+	// 	computeDFSPHFactor(fluidModelIndex);
+	// }
+	// STOP_TIMING_AVG;
 
 
 
@@ -416,11 +433,21 @@ void TimeStepDFSPHbubbleExperimental::step()
 		}
 	}
 
+	
+
 	//////////////////////////////////////////////////////////////////////////
-	// emit new particles and perform an animation field step
+	// Perform divergence solve (see Algorithm 2 in [BK17])
 	//////////////////////////////////////////////////////////////////////////
-	sim->emitParticles();
-	sim->animateParticles();
+	if (m_enableDivergenceSolver)
+	{
+		START_TIMING("divergenceSolve");
+		divergenceSolve();
+		STOP_TIMING_AVG
+	}
+	else {
+		m_iterationsV = 0;
+		m_iterationsVair = 0;
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// air particle generation: Trapped Air
@@ -470,6 +497,12 @@ void TimeStepDFSPHbubbleExperimental::step()
 
 	}
 	STOP_TIMING_AVG;
+
+	//////////////////////////////////////////////////////////////////////////
+	// emit new particles and perform an animation field step
+	//////////////////////////////////////////////////////////////////////////
+	sim->emitParticles();
+	sim->animateParticles();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compute new time

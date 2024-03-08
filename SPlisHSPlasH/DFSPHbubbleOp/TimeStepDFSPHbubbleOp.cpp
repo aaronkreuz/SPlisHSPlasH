@@ -26,6 +26,7 @@ int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_AIR = -1;
 int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_LIQ = -1;
 int TimeStepDFSPHbubbleOp::MAX_ERROR_AIR = -1;
 int TimeStepDFSPHbubbleOp::SURFACE_THRESHOLD_DENSITY_RATIO = -1;
+int TimeStepDFSPHbubbleOp::ENABLE_ISOLATION_CRITERION = -1;
 
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR_OPTIMIZATION = -1;
@@ -37,6 +38,7 @@ int TimeStepDFSPHbubbleOp::MAX_AIR_PARTICLES_PER_STEP = -1;
 int TimeStepDFSPHbubbleOp::EMIT_TIME_DISTANCE = -1;
 int TimeStepDFSPHbubbleOp::DENSITY_RATIO_CAVITATION = -1;
 int TimeStepDFSPHbubbleOp::NEXT_EMIT_TIME = -1;
+int TimeStepDFSPHbubbleOp::INITIAL_EMIT_TIME = -1;
 
 int TimeStepDFSPHbubbleOp::TRAPPED_AIR_APPROACH = -1;
 int TimeStepDFSPHbubbleOp::ENUM_TRAPPED_AIR_APPROACH_NONE = -1;
@@ -55,10 +57,12 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_enableDivergenceSolver = true;
 	m_enableTrappedAir = false;
 	m_enableTrappedAirOptimization = false;
+	m_enableIsolationCriterion = false;
 	m_maxIterationsV = 100;
 	m_maxErrorV = static_cast<Real>(0.1);
 	m_vMinTrappedAir = static_cast<Real>(9.0);
 	m_vtTrappedAir = static_cast<Real>(0.3);
+	m_initialEmitTime = static_cast<Real>(0.1);
 	m_nextEmitTime = static_cast<Real>(0.1);
 	m_emitTimeDistance = static_cast<Real>(0.1);
 	m_vDiffThresholdMin = static_cast<Real>(5.0);
@@ -189,6 +193,11 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	setGroup(VDIFF_THRESHOLD_MAX, "Simulation|TrappedAir Extension");
 	setDescription(VDIFF_THRESHOLD_MAX, "Max. threshold velocity difference between liquid particle and its liquid neighbors for air particle generation.");
 
+	INITIAL_EMIT_TIME = createNumericParameter("initialEmitTime", "Initial emit time trappedAir", &m_initialEmitTime);
+	setGroup(INITIAL_EMIT_TIME, "Simulation|TrappedAir Extension");
+	setDescription(INITIAL_EMIT_TIME, "Initial emit time for trapped air generation.");
+	getParameter(INITIAL_EMIT_TIME)->setReadOnly(true);
+
 	NEXT_EMIT_TIME = createNumericParameter("nextEmitTime", "Next emit time trappedAir", &m_nextEmitTime);
 	setGroup(NEXT_EMIT_TIME, "Simulation|TrappedAir Extension");
 	setDescription(NEXT_EMIT_TIME, "Next emit time for trapped air generation.");
@@ -212,8 +221,11 @@ void TimeStepDFSPHbubbleOp::initParameters()
 
 	SURFACE_THRESHOLD_DENSITY_RATIO = createNumericParameter("onSurfaceThresholdDensityRatio", "Threshold density ratio of rest-density for onSurface state", &m_onSurfaceThresholdDensity);
     setGroup(SURFACE_THRESHOLD_DENSITY_RATIO, "Simulation|DFSPHbubble");
-    setDescription(SURFACE_THRESHOLD_DENSITY_RATIO, "Threshold density ratio of rest-density for onSurface state.");
+    setDescription(SURFACE_THRESHOLD_DENSITY_RATIO, "Threshold density ratio for being considered as 'isolated'.");
 
+	ENABLE_ISOLATION_CRITERION = createBoolParameter("enableIsolationCriterion", "Enable isolation criterion", &m_enableIsolationCriterion);
+	setGroup(ENABLE_ISOLATION_CRITERION, "Simulation|DFSPHbubble");
+	setDescription(ENABLE_ISOLATION_CRITERION, "Turn isolation criterion on/off.");
 
 }
 
@@ -430,7 +442,7 @@ void TimeStepDFSPHbubbleOp::step()
 		FluidModel* liquid = sim->getFluidModel(liquidModelIndex);
 		const Real t = tm->getTime();
 
-		if (t >= m_nextEmitTime) {
+		if (t >= m_nextEmitTime && t >= m_initialEmitTime) {
 			// loop over liquid particle
 			unsigned int emittedParticles = 0;
 			std::vector<unsigned int> indicesGen;
@@ -462,7 +474,7 @@ void TimeStepDFSPHbubbleOp::step()
 				this->emittedParticles(airModel, airModel->numActiveParticles() - emittedParticles);
 				sim->getNeighborhoodSearch()->resize_point_set(airModel->getPointSetIndex(), &airModel->getPosition(0)[0], airModel->numActiveParticles());
 
-				m_nextEmitTime += m_emitTimeDistance;
+				m_nextEmitTime = std::max(m_nextEmitTime, m_initialEmitTime) + m_emitTimeDistance;
 			}
 
 			indicesGen.clear();
@@ -761,11 +773,9 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			const Vector3r& xi = model->getPosition(i);
 			unsigned int& onSurface_i = m_simulationData.getOnSurface(i);
 
-			// look for number of liquid particle neighbors of the air particle
-			// int numLiqNeighbors = sim->numberOfNeighbors(m_model->getPointSetIndex(), fluidModelIndex, i);
-
 			volatile bool onSurface = true;
-			int liquidNeighbors = 0;
+			int liquidNeighbors = 0; // look for number of liquid particle neighbors of the air particle
+
 			// looping over liquid neighbors
 			forall_fluid_neighbors_in_different_phase(
 				liquidNeighbors++;
@@ -780,11 +790,11 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 
 			bool isolated = false; // isolated regarding air neighbors, not to mix up with 'liquidNeighbors'
 			if (!onSurface) {
-				const Real m_onSurfaceThresholdDensity = 0.3 * model->getDensity0(); // 0.5 * rest density
+				const Real thresholdDensity = m_onSurfaceThresholdDensity * model->getDensity0(); // 0.5 * rest density
 
 				// WARNING: This condition seems to be error prone. If an air particle gets "trapped" it might not have any air-neighbors and would be falsly identified as "on the surface"
 				// if(density_i > m_onSurfaceThresholdDensity){
-				if (density_i < m_onSurfaceThresholdDensity) {
+				if (density_i < thresholdDensity) {
 					isolated = true;
 				}
 			}
@@ -796,12 +806,17 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			onSurface_i = onSurface;
 			Real& lifetime_i = m_simulationData.getLifetime(i);
 
-			// lifetime update
-			if(onSurface || isolated){
-				if (liquidNeighbors < 3 && lifetime_i > h) {
-					lifetime_i -= 3*h;
-				}
-				
+			// if air particle is on the surface and has no liquid neighbors -> delete in next time step (bubble dispersion)
+			if (onSurface && (liquidNeighbors == 0)) {
+				lifetime_i = lifetime_i > 2 * h ? 2*h : lifetime_i;
+			}
+
+			// ### lifetime update ####
+			if(onSurface || (m_enableIsolationCriterion && isolated)){
+				// if (liquidNeighbors < 3 && lifetime_i > h) {
+				// 	lifetime_i -= 2*h;
+				// }
+
 				lifetime_i -= h;
 			}
 		}
@@ -1327,6 +1342,7 @@ void TimeStepDFSPHbubbleOp::reset()
 	m_iterations = 0;
 	m_iterationsV = 0;
 	m_numberEmittedTrappedAirParticles = 0;
+	m_nextEmitTime = m_initialEmitTime;
 }
 
 void TimeStepDFSPHbubbleOp::performNeighborhoodSearch()

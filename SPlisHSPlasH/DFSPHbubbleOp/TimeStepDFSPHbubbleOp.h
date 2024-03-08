@@ -33,6 +33,7 @@ namespace SPH
 		unsigned int m_maxIterationsV;
 		bool m_enableTrappedAir;
 		bool m_enableTrappedAirOptimization; // do not emit air particle if another air particle is too close (threshold)
+		bool m_enableIsolationCriterion; // reduce lifetime of particles if they have less than threshold neighbors
 
 		unsigned int m_iterationsLiq;
 		unsigned int m_iterationsAir;
@@ -51,6 +52,7 @@ namespace SPH
 
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
+		Real m_initialEmitTime = static_cast<Real>(0.1); // AK 2024: avoid emitting in the first timestep
 		Real m_nextEmitTime = static_cast<Real>(0.1); // AK 2024: avoid emitting in the first timestep
 		Real m_emitTimeDistance = static_cast<Real>(0.1); // AK 2024
 		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
@@ -121,6 +123,7 @@ namespace SPH
 		static int SOLVER_ITERATIONS_V_AIR;
 		static int MAX_ERROR_AIR;
 		static int SURFACE_THRESHOLD_DENSITY_RATIO;
+		static int ENABLE_ISOLATION_CRITERION;
 
 		// trapped air
 		static int TRAPPED_AIR_APPROACH;
@@ -139,6 +142,7 @@ namespace SPH
 		static int EMIT_TIME_DISTANCE;
 		static int DENSITY_RATIO_CAVITATION; // AK 2024
 		static int NEXT_EMIT_TIME; // AK 2024
+		static int INITIAL_EMIT_TIME; // AK 2024
 
 
 

@@ -24,8 +24,9 @@
         "emitTimeDistance": 0.04,
         "dataExportFPS": 30,
         "maxErrorAir": 0.1,
-        "nextEmitTime" : 1.0,
-        "stopAt": 10.0
+        "initialEmitTime" : 0.01,
+        "stopAt": 10.0,
+        "timeStepSize": 0.005
     },
 
     "Materials": [
@@ -94,7 +95,7 @@
             "rotationAxis": [0, 1, 0],
             "rotationAngle": 0,
             "velocity": 4,	
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "emitEndTime": 6,
             "type": 1
         },
@@ -105,7 +106,7 @@
             "rotationAxis": [0, 1, 0],
             "rotationAngle": 0,
             "velocity": 4,	
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "emitEndTime": 6,
             "type": 1
         },
@@ -116,7 +117,7 @@
             "rotationAxis": [0, 1, 0],
             "rotationAngle": 0,
             "velocity": 4,	
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "emitEndTime": 6,
             "type": 1
         }

@@ -140,8 +140,6 @@ namespace SPH
 		static int DENSITY_RATIO_CAVITATION; // AK 2024
 		static int NEXT_EMIT_TIME; // AK 2024
 
-
-
 		TimeStepDFSPHbubbleExperimental();
 		virtual ~TimeStepDFSPHbubbleExperimental(void);
 
@@ -153,6 +151,7 @@ namespace SPH
 		}
 
 		/** perform a simulation step */
+		virtual void init();
 		virtual void step();
 		virtual void reset();
 
