@@ -19,10 +19,11 @@
         "trappedAirApproach": 1,
         "enableDivergenceSolver": true,
         "boundaryHandlingMethod": 2,
-        "vMinTrappedAir": 8.0,
-        "maxAirParticlesPerStep": 200,
+        "vMinTrappedAir": 3.0,
+        "maxAirParticlesPerStep": 50,
         "emitTimeDistance": 0.035,
-        "dataExportFPS": 30
+        "dataExportFPS": 30,
+        "enableIsolationCriterion": true
     },
 
     "Materials": [
