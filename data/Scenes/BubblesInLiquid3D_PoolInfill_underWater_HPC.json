@@ -73,7 +73,7 @@
                 -0.6
             ],
             "type": 1,
-            "velocity": 4,
+            "velocity": 5,
             "width": 3
         },
         {
@@ -111,7 +111,7 @@
                 0.6
             ],
             "type": 1,
-            "velocity": 4,
+            "velocity": 3,
             "width": 3
         }
     ],

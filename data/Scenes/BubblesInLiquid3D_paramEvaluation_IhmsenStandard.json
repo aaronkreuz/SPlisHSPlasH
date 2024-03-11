@@ -16,16 +16,14 @@
         "exponent": 7,
         "velocityUpdateMethod": 0,
         "enableDivergenceSolver": true,
-        "boundaryHandlingMethod": 0,
-        "particleAttributes": "velocity;density;p / rho^2",
-        "dataExportFPS": 30
+        "boundaryHandlingMethod": 2
     },
 
     "Materials": [
 		{
 			"id": "Liquid",
 			"surfaceTension": 0.2,
-			"surfaceTensionMethod": 4,		
+			"surfaceTensionMethod": 0,		
 			"viscosity": 0.01,
 			"viscosityMethod": 1, 
 			"vorticityMethod": 0, 
@@ -43,11 +41,11 @@
             "viscosityMethod": 0,
             "bubbleMethod": 1,
             "surfaceTensionMethod": 0,
-            "surfaceTension": 2.0,
+            "surfaceTension": 5.0,
             "renderModel": true,
             "cohesionCoefficient": 40.0,
             "dragConstantAir": 8.0,
-            "buoyancyMax": 5.0,
+            "buoyancyMax": 6.0,
             "buoyancyMin": 1.4,
             "cohesionForceType": 1
         }
@@ -56,16 +54,16 @@
     "RigidBodies": [
 		{
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,1.5,0],
+			"translation": [0,0.75,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1.0, 3.0, 1.0],
+			"scale": [1.0, 1.5, 0.5],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
 			"mapInvert": true, 
 			"mapThickness": 0.0,
-			"mapResolution": [50,50,50]
+			"mapResolution": [30,30,20]
 		}
 	],
     "FluidBlocks": [
@@ -136,7 +134,7 @@
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillar_2m_r=0.02.bgeo",
+			"particleFile": "../models/liquidPhase_r=0.02.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}
