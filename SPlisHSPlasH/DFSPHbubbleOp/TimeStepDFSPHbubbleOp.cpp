@@ -836,7 +836,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 		);
 
 		// Disable an air particle at the end of its lifetime
-		if(lifetime_i <= 0.0){
+		if(lifetime_i <= 0.0 && m_simulationData.getOnSurface(i)){
 			model->getVelocity(i) = Vector3r::Zero(); // prevent that velocity influences the CFL condition
 			model->getPosition(i) = Vector3r(1000 + i, 1000, 1000);
 
@@ -965,6 +965,10 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 				//////////////////////////////////////////////////////////////////////////
 				// Time integration of the pressure accelerations to get new velocities
 				//////////////////////////////////////////////////////////////////////////
+				if (model->getParticleState(i) == ParticleState::Disabled) {
+					continue;
+				}
+
 				computePressureAccel(fluidModelIndex, i, density0, m_simulationData.getPressureRho2Data(), true);
 				model->getVelocity(i) += h * m_simulationData.getPressureAccel(fluidModelIndex, i);
 			}
@@ -980,6 +984,9 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 			#pragma omp for schedule(static)  
 			for (int i = 0; i < numParticles; i++)
 			{
+				if (model->getParticleState(i) == ParticleState::Disabled) {
+					continue;
+				}
 				//////////////////////////////////////////////////////////////////////////
 				// Multiply by h^2, the time step size has to be removed 
 				// to make the pressure value independent 

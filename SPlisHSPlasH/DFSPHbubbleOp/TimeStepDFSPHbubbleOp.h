@@ -66,6 +66,7 @@ namespace SPH
 		Real m_thresholdCavitationDensityRatio = static_cast<Real>(0.5); // AK 2024
 
 		int m_numberEmittedTrappedAirParticles = 0;
+		int m_numberActiveTrappedAirParticles = 0; // TODO
 
 		// different maxError in pressure solver for Air phase
 		Real m_maxErrorAir; // AK 2024
