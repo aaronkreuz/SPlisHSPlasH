@@ -115,6 +115,7 @@ TimeStepDFSPHbubbleOp::~TimeStepDFSPHbubbleOp(void)
 	}
 
 	LOG_INFO << "Sum of trapped Air particles: " << m_numberEmittedTrappedAirParticles;
+	LOG_INFO << "Max number of trapped Air particles at same time: " << m_maxNumberActiveTrappedAirParticles;
 }
 
 void TimeStepDFSPHbubbleOp::initParameters()
@@ -484,6 +485,13 @@ void TimeStepDFSPHbubbleOp::step()
 	STOP_TIMING_AVG;
 
 	//////////////////////////////////////////////////////////////////////////
+	// update max number of air particles
+	//////////////////////////////////////////////////////////////////////////
+	if(m_numberActiveTrappedAirParticles > m_maxNumberActiveTrappedAirParticles){
+		m_maxNumberActiveTrappedAirParticles = m_numberActiveTrappedAirParticles;
+    }
+
+	//////////////////////////////////////////////////////////////////////////
 	// Compute new time
 	//////////////////////////////////////////////////////////////////////////
 	tm->setTime (tm->getTime() + h);
@@ -845,6 +853,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			// TODO: Clean-up can now take place here
 			m_simulationData.setLifetime(i, 3.0);
 			m_simulationData.getOnSurface(i) = 0;
+			m_numberActiveTrappedAirParticles--;
 		}
 	}
 
@@ -1349,6 +1358,8 @@ void TimeStepDFSPHbubbleOp::reset()
 	m_iterations = 0;
 	m_iterationsV = 0;
 	m_numberEmittedTrappedAirParticles = 0;
+	m_numberActiveTrappedAirParticles = 0;
+	m_maxNumberActiveTrappedAirParticles = 0;
 	m_nextEmitTime = m_initialEmitTime;
 }
 
@@ -2235,5 +2246,6 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 
 		numEmittedParticles++;
 		m_numberEmittedTrappedAirParticles++;
+		m_numberActiveTrappedAirParticles++;
 	}
 }
