@@ -33,6 +33,7 @@ namespace SPH
 		unsigned int m_maxIterationsV;
 		bool m_enableTrappedAir;
 		bool m_enableTrappedAirOptimization; // do not emit air particle if another air particle is too close (threshold)
+		bool m_enableIsolationCriterion; // reduce lifetime of particles if they have less than threshold neighbors
 
 		unsigned int m_iterationsLiq;
 		unsigned int m_iterationsAir;
@@ -51,6 +52,7 @@ namespace SPH
 
 		// Trapped air
 		int m_trappedAirApproach = 0; // 0: Ihmsen et al. 2011, 1: Ihmsen et al. 2012
+		Real m_initialEmitTime = static_cast<Real>(0.1); // AK 2024: avoid emitting in the first timestep
 		Real m_nextEmitTime = static_cast<Real>(0.1); // AK 2024: avoid emitting in the first timestep
 		Real m_emitTimeDistance = static_cast<Real>(0.1); // AK 2024
 		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
@@ -64,6 +66,8 @@ namespace SPH
 		Real m_thresholdCavitationDensityRatio = static_cast<Real>(0.5); // AK 2024
 
 		int m_numberEmittedTrappedAirParticles = 0;
+		int m_numberActiveTrappedAirParticles = 0;
+		int m_maxNumberActiveTrappedAirParticles = 0;
 
 		// different maxError in pressure solver for Air phase
 		Real m_maxErrorAir; // AK 2024
@@ -86,9 +90,9 @@ namespace SPH
 
 		void computeDFSPHFactor(const unsigned int fluidModelIndex);
 		void pressureSolve();
-		void pressureSolveIteration(const unsigned int fluidModelIndex, Real &avg_density_err);
+		void pressureSolveIteration(const unsigned int fluidModelIndex, Real& avg_density_err);
 		void divergenceSolve();
-		void divergenceSolveIteration(const unsigned int fluidModelIndex, Real &avg_density_err);
+		void divergenceSolveIteration(const unsigned int fluidModelIndex, Real& avg_density_err);
 		void computeDensityAdv(const unsigned int fluidModelIndex, const unsigned int index, const Real h, const Real density0);
 		void computeDensityChange(const unsigned int fluidModelIndex, const unsigned int index, const Real h);
 
@@ -96,16 +100,16 @@ namespace SPH
 		Real compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i);
 
 		void computeOnSurfaceAir();
-		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
+		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirIhmsen2012(unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirCavitation(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 
-		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, Vector3r vel, Vector3r pos);
+		void emitAirParticleFromVelocityField(unsigned int& numEmittedParticles, Vector3r vel, Vector3r pos);
 
 		/** Perform the neighborhood search for all fluid particles.
 		*/
 		void performNeighborhoodSearch();
-		virtual void emittedParticles(FluidModel *model, const unsigned int startIndex);
+		virtual void emittedParticles(FluidModel* model, const unsigned int startIndex);
 
 		/** Init all generic parameters */
 		virtual void initParameters();
@@ -121,6 +125,7 @@ namespace SPH
 		static int SOLVER_ITERATIONS_V_AIR;
 		static int MAX_ERROR_AIR;
 		static int SURFACE_THRESHOLD_DENSITY_RATIO;
+		static int ENABLE_ISOLATION_CRITERION;
 
 		// trapped air
 		static int TRAPPED_AIR_APPROACH;
@@ -139,6 +144,9 @@ namespace SPH
 		static int EMIT_TIME_DISTANCE;
 		static int DENSITY_RATIO_CAVITATION; // AK 2024
 		static int NEXT_EMIT_TIME; // AK 2024
+		static int INITIAL_EMIT_TIME; // AK 2024
+
+
 
 		TimeStepDFSPHbubbleExperimental();
 		virtual ~TimeStepDFSPHbubbleExperimental(void);
@@ -151,7 +159,6 @@ namespace SPH
 		}
 
 		/** perform a simulation step */
-		virtual void init();
 		virtual void step();
 		virtual void reset();
 
