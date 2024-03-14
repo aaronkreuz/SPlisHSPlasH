@@ -31,7 +31,7 @@
         ],
         "initialEmitTime": 1.0,
         "kernel": 4,
-        "maxAirParticlesPerStep": 40,
+        "maxAirParticlesPerStep": 100,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 0.10000000149011612,
         "maxErrorV": 0.10000000149011612,
@@ -54,7 +54,7 @@
         "vDiffThresholdMin": 5.0,
         "vMinTrappedAir": 4.0,
         "velocityUpdateMethod": 0,
-        "vtTrappedAir": 0.30000001192092896
+        "vtTrappedAir": 0.44999998807907104
     },
     "Emitters": [
         {
@@ -73,7 +73,7 @@
                 -0.6
             ],
             "type": 1,
-            "velocity": 5,
+            "velocity": 4.5,
             "width": 3
         },
         {
@@ -111,7 +111,7 @@
                 0.6
             ],
             "type": 1,
-            "velocity": 3,
+            "velocity": 3.5,
             "width": 3
         }
     ],
@@ -188,7 +188,7 @@
             "buoyancyForceType": 1,
             "buoyancyMax": 4.0,
             "buoyancyMin": 1.399999976158142,
-            "cohesionCoefficient": 40.0,
+            "cohesionCoefficient": 10.0,
             "cohesionCoefficientNormal": 5.0,
             "cohesionForceType": 5,
             "colorField": "velocity",
@@ -202,7 +202,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 5.0,
+            "surfaceTension": 4.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,

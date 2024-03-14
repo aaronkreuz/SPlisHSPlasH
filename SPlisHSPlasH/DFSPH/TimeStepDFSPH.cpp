@@ -702,377 +702,377 @@ void TimeStepDFSPH::resize()
 	m_simulationData.init();
 }
 
-#ifdef USE_AVX
-
-void TimeStepDFSPH::computeDFSPHFactor(const unsigned int fluidModelIndex)
-{
-	//////////////////////////////////////////////////////////////////////////
-	// Init parameters
-	//////////////////////////////////////////////////////////////////////////
-
-	Simulation* sim = Simulation::getCurrent();
-	const unsigned int nFluids = sim->numberOfFluidModels();
-	FluidModel* model = sim->getFluidModel(fluidModelIndex);
-	const int numParticles = (int)model->numActiveParticles();
-	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
-
-	#pragma omp parallel default(shared)
-	{
-		//////////////////////////////////////////////////////////////////////////
-		// Compute pressure stiffness denominator
-		//////////////////////////////////////////////////////////////////////////
-
-		#pragma omp for schedule(static)
-		for (int i = 0; i < numParticles; i++)
-		{
-			//////////////////////////////////////////////////////////////////////////
-			// Compute gradient dp_i/dx_j * (1/kappa)  and dp_j/dx_j * (1/kappa)
-			// (see Equation (8) and the previous one [BK17])
-			// Note: That in all quantities rho0 is missing due to our
-			// implementation of multiphase simulations.
-			//////////////////////////////////////////////////////////////////////////
-			const Vector3r& xi = model->getPosition(i);
-
-			Real sum_grad_p_k;
-			Vector3r grad_p_i;
-			Vector3f8 xi_avx(xi);
-			Scalarf8 sum_grad_p_k_avx(0.0f);
-			Vector3f8 grad_p_i_avx;
-			grad_p_i_avx.setZero();
-
-			//////////////////////////////////////////////////////////////////////////
-			// Fluid
-			//////////////////////////////////////////////////////////////////////////
-			forall_fluid_neighbors_avx_nox(
-				compute_xj(fm_neighbor, pid);
-				compute_Vj(fm_neighbor);
-				compute_Vj_gradW();
-				sum_grad_p_k_avx += V_gradW.squaredNorm();
-				grad_p_i_avx += V_gradW;
-			);
-
-			//////////////////////////////////////////////////////////////////////////
-			// Boundary
-			//////////////////////////////////////////////////////////////////////////
-			if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
-			{
-				forall_boundary_neighbors_avx(
-					const Scalarf8 V_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
-					const Vector3f8 grad_p_j = CubicKernel_AVX::gradW(xj_avx - xi_avx) * V_avx;
-					grad_p_i_avx -= grad_p_j;
-				);
-			}
-
-			sum_grad_p_k = sum_grad_p_k_avx.reduce();
-			grad_p_i[0] = grad_p_i_avx.x().reduce();
-			grad_p_i[1] = grad_p_i_avx.y().reduce();
-			grad_p_i[2] = grad_p_i_avx.z().reduce();
-
-			if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
-			{
-				forall_density_maps(
-					grad_p_i -= gradRho;
-				);
-			}
-			else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
-			{
-				forall_volume_maps(
-					const Vector3r grad_p_j = -Vj * sim->gradW(xi - xj);
-					grad_p_i -= grad_p_j;
-				);
-			}
-
-			sum_grad_p_k += grad_p_i.squaredNorm();
-
-			//////////////////////////////////////////////////////////////////////////
-			// Compute factor alpha_i / rho_i (see Equation (11) in [BK17])
-			//////////////////////////////////////////////////////////////////////////
-			Real& factor = m_simulationData.getFactor(fluidModelIndex, i);
-			if (sum_grad_p_k > m_eps)
-				factor = static_cast<Real>(1.0) / (sum_grad_p_k);
-			else
-				factor = 0.0;
-		}
-	}
-}
-
-/** Compute rho_adv,i^(0) (see equation in Section 3.3 in [BK17])
-  * using the velocities after the non-pressure forces were applied.
-**/
-void TimeStepDFSPH::computeDensityAdv(const unsigned int fluidModelIndex, const unsigned int i, const Real h, const Real density0)
-{
-	Simulation *sim = Simulation::getCurrent();
-	FluidModel *model = sim->getFluidModel(fluidModelIndex);
-	const Real &density = model->getDensity(i);
-	Real &densityAdv = m_simulationData.getDensityAdv(fluidModelIndex, i);
-	const Vector3r &xi = model->getPosition(i);
-	const Vector3r &vi = model->getVelocity(i);
-	Real delta = 0.0;
-	const unsigned int nFluids = sim->numberOfFluidModels();
-	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
-
-	Scalarf8 delta_avx(0.0f);
-	const Vector3f8 xi_avx(xi);
-	Vector3f8 vi_avx(vi);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Fluid
-	//////////////////////////////////////////////////////////////////////////
-	forall_fluid_neighbors_avx_nox(
-		compute_xj(fm_neighbor, pid);
-		compute_Vj(fm_neighbor);
-		compute_Vj_gradW();
-		const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &fm_neighbor->getVelocity(0), count);
-		delta_avx += (vi_avx - vj_avx).dot(V_gradW);
-	);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Boundary
-	//////////////////////////////////////////////////////////////////////////
-	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
-	{
-		forall_boundary_neighbors_avx(
-			const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
-			const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVelocity(0), count);
-			delta_avx += Vj_avx * (vi_avx - vj_avx).dot(CubicKernel_AVX::gradW(xi_avx - xj_avx));
-		);
-	}
-
-	delta = delta_avx.reduce();
-
-	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
-	{
-		forall_density_maps(
-			Vector3r vj;
-			bm_neighbor->getPointVelocity(xi, vj);
-			delta -= (vi - vj).dot(gradRho);
-		);
-	}
-	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
-	{
-		forall_volume_maps(
-			Vector3r vj;
-			bm_neighbor->getPointVelocity(xj, vj);
-			delta += Vj * (vi - vj).dot(sim->gradW(xi - xj));
-		);
-	}
-
-	densityAdv = density / density0 + h*delta;
-}
-
-/** Compute rho_adv,i^(0) (see equation (9) in Section 3.2 [BK17])
-  * using the velocities after the non-pressure forces were applied.
-  */
-void TimeStepDFSPH::computeDensityChange(const unsigned int fluidModelIndex, const unsigned int i, const Real h)
-{
-	Simulation *sim = Simulation::getCurrent();
-	FluidModel *model = sim->getFluidModel(fluidModelIndex);
-	const Vector3r &xi = model->getPosition(i);
-	const Vector3r &vi = model->getVelocity(i);
-	unsigned int numNeighbors = 0;
-	const unsigned int nFluids = sim->numberOfFluidModels();
-	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
-
-	Scalarf8 densityAdv_avx(0.0f);
-	const Vector3f8 xi_avx(xi);
-	Vector3f8 vi_avx(vi);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Fluid
-	//////////////////////////////////////////////////////////////////////////
-	forall_fluid_neighbors_avx_nox(
-		compute_xj(fm_neighbor, pid);
-		compute_Vj(fm_neighbor);
-		compute_Vj_gradW();
-		const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &fm_neighbor->getVelocity(0), count);
-		densityAdv_avx += (vi_avx - vj_avx).dot(V_gradW);
-	);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Boundary
-	//////////////////////////////////////////////////////////////////////////
-	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
-	{
-		forall_boundary_neighbors_avx(
-			const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
-			const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVelocity(0), count);
-			densityAdv_avx += Vj_avx * (vi_avx - vj_avx).dot(CubicKernel_AVX::gradW(xi_avx - xj_avx));
-		);
-	}
-
-	Real &densityAdv = m_simulationData.getDensityAdv(fluidModelIndex, i);
-	densityAdv = densityAdv_avx.reduce();
-
-	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
-	{
-		forall_density_maps(
-			Vector3r vj;
-			bm_neighbor->getPointVelocity(xi, vj);
-			densityAdv -= (vi - vj).dot(gradRho);
-		);
-	}
-	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
-	{
-		forall_volume_maps(
-			Vector3r vj;
-			bm_neighbor->getPointVelocity(xj, vj);
-			densityAdv += Vj * (vi - vj).dot(sim->gradW(xi - xj));
-		);
-	}
-}
-
-/** Compute pressure accelerations using the current pressure values of the particles
- */
-void TimeStepDFSPH::computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, std::vector<std::vector<Real>>& pressure_rho2, const bool applyBoundaryForces)
-{
-	Simulation* sim = Simulation::getCurrent();
-	FluidModel* model = sim->getFluidModel(fluidModelIndex);
-	const unsigned int nFluids = sim->numberOfFluidModels();
-	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
-
-	Vector3r& ai = m_simulationData.getPressureAccel(fluidModelIndex, i);
-
-	if (model->getParticleState(i) != ParticleState::Active)
-		return;
-
-	// p_rho2_i = (p_i / rho_i^2)
-	const Real p_rho2_i = pressure_rho2[fluidModelIndex][i];
-	const Vector3r &xi = model->getPosition(i);
-
-	Scalarf8 p_rho2_i_avx(p_rho2_i);
-	const Vector3f8 xi_avx(xi);
-	Vector3f8 delta_ai_avx;
-	delta_ai_avx.setZero();
-
-	//////////////////////////////////////////////////////////////////////////
-	// Fluid
-	//////////////////////////////////////////////////////////////////////////
-	forall_fluid_neighbors_avx_nox(
-		compute_xj(fm_neighbor, pid);
-		compute_Vj(fm_neighbor);
-		compute_Vj_gradW();
-		const Scalarf8 densityFrac_avx(fm_neighbor->getDensity0() / density0);
-
-		// p_rho2_j = (p_j / rho_j^2)
-		const Scalarf8 p_rho2_j_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &pressure_rho2[pid][0], count);
-		const Scalarf8 pSum = p_rho2_i_avx + densityFrac_avx * p_rho2_j_avx;
-		delta_ai_avx -= V_gradW * pSum;
-	)
-
-	//////////////////////////////////////////////////////////////////////////
-	// Boundary
-	//////////////////////////////////////////////////////////////////////////
-	if (fabs(p_rho2_i) > m_eps)
-	{
-		if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
-		{
-			const Scalarf8 mi_avx(model->getMass(i));
-			forall_boundary_neighbors_avx(
-				const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
-
-				// Directly update velocities instead of storing pressure accelerations
-				const Vector3f8 a = -CubicKernel_AVX::gradW(xi_avx - xj_avx) * (Vj_avx * p_rho2_i_avx);
-				delta_ai_avx += a;
-
-				if (applyBoundaryForces)
-					bm_neighbor->addForce(xj_avx, -a * mi_avx, count);
-			);
-		}
-	}
-
-	ai[0] = delta_ai_avx.x().reduce();
-	ai[1] = delta_ai_avx.y().reduce();
-	ai[2] = delta_ai_avx.z().reduce();
-
-	if (fabs(p_rho2_i) > m_eps)
-	{
-		if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
-		{
-			forall_density_maps(
-				const Vector3r a = (Real) 1.0 * p_rho2_i * gradRho;
-				ai += a;
-
-				if (applyBoundaryForces)
-					bm_neighbor->addForce(xj, -model->getMass(i) * a);
-			);
-		}
-		else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
-		{
-			forall_volume_maps(
-				const Vector3r grad_p_j = -Vj * sim->gradW(xi - xj);
-				const Vector3r a = (Real) 1.0 * p_rho2_i * grad_p_j;
-				ai += a;
-
-				if (applyBoundaryForces)
-					bm_neighbor->addForce(xj, -model->getMass(i) * a);
-			);
-		}
-	}
-}
-
-
-Real TimeStepDFSPH::compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i)
-{
-	Simulation* sim = Simulation::getCurrent();
-	FluidModel* model = sim->getFluidModel(fluidModelIndex);
-	const unsigned int nFluids = sim->numberOfFluidModels();
-	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
-
-	//////////////////////////////////////////////////////////////////////////
-	// Compute A*p which is the change of the density when applying the
-	// pressure forces.
-	// \sum_j a_ij * p_j = h^2 \sum_j V_j (a_i - a_j) * gradW_ij
-	// This is the RHS of Equation (12) in [BK17]
-	//////////////////////////////////////////////////////////////////////////
-	const Vector3r& xi = model->getPosition(i);
-	const Vector3r& ai = m_simulationData.getPressureAccel(fluidModelIndex, i);
-	const Vector3f8 xi_avx(xi);
-	const Vector3f8 ai_avx(ai);
-	Scalarf8 aij_pj_avx;
-	aij_pj_avx.setZero();
-
-	//////////////////////////////////////////////////////////////////////////
-	// Fluid
-	//////////////////////////////////////////////////////////////////////////
-	forall_fluid_neighbors_avx_nox(
-		compute_xj(fm_neighbor, pid);
-		compute_Vj(fm_neighbor);
-		compute_Vj_gradW();
-
-		const Vector3f8 aj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &m_simulationData.getPressureAccel(pid, 0), count);
-		aij_pj_avx += (ai_avx - aj_avx).dot(V_gradW);
-	);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Boundary
-	//////////////////////////////////////////////////////////////////////////
-	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
-	{
-		forall_boundary_neighbors_avx(
-			const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
-			aij_pj_avx += Vj_avx * ai_avx.dot(CubicKernel_AVX::gradW(xi_avx - xj_avx));
-		);
-	}
-
-	Real aij_pj = aij_pj_avx.reduce();
-
-	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
-	{
-		forall_density_maps(
-			aij_pj -= ai.dot(gradRho);
-		);
-	}
-	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
-	{
-		forall_volume_maps(
-			aij_pj += Vj * ai.dot(sim->gradW(xi - xj));
-		);
-	}
-	return aij_pj;
-}
-
-
-#else
+// #ifdef USE_AVX
+// 
+// void TimeStepDFSPH::computeDFSPHFactor(const unsigned int fluidModelIndex)
+// {
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Init parameters
+// 	//////////////////////////////////////////////////////////////////////////
+// 
+// 	Simulation* sim = Simulation::getCurrent();
+// 	const unsigned int nFluids = sim->numberOfFluidModels();
+// 	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+// 	const int numParticles = (int)model->numActiveParticles();
+// 	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
+// 
+// 	#pragma omp parallel default(shared)
+// 	{
+// 		//////////////////////////////////////////////////////////////////////////
+// 		// Compute pressure stiffness denominator
+// 		//////////////////////////////////////////////////////////////////////////
+// 
+// 		#pragma omp for schedule(static)
+// 		for (int i = 0; i < numParticles; i++)
+// 		{
+// 			//////////////////////////////////////////////////////////////////////////
+// 			// Compute gradient dp_i/dx_j * (1/kappa)  and dp_j/dx_j * (1/kappa)
+// 			// (see Equation (8) and the previous one [BK17])
+// 			// Note: That in all quantities rho0 is missing due to our
+// 			// implementation of multiphase simulations.
+// 			//////////////////////////////////////////////////////////////////////////
+// 			const Vector3r& xi = model->getPosition(i);
+// 
+// 			Real sum_grad_p_k;
+// 			Vector3r grad_p_i;
+// 			Vector3f8 xi_avx(xi);
+// 			Scalarf8 sum_grad_p_k_avx(0.0f);
+// 			Vector3f8 grad_p_i_avx;
+// 			grad_p_i_avx.setZero();
+// 
+// 			//////////////////////////////////////////////////////////////////////////
+// 			// Fluid
+// 			//////////////////////////////////////////////////////////////////////////
+// 			forall_fluid_neighbors_avx_nox(
+// 				compute_xj(fm_neighbor, pid);
+// 				compute_Vj(fm_neighbor);
+// 				compute_Vj_gradW();
+// 				sum_grad_p_k_avx += V_gradW.squaredNorm();
+// 				grad_p_i_avx += V_gradW;
+// 			);
+// 
+// 			//////////////////////////////////////////////////////////////////////////
+// 			// Boundary
+// 			//////////////////////////////////////////////////////////////////////////
+// 			if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+// 			{
+// 				forall_boundary_neighbors_avx(
+// 					const Scalarf8 V_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
+// 					const Vector3f8 grad_p_j = CubicKernel_AVX::gradW(xj_avx - xi_avx) * V_avx;
+// 					grad_p_i_avx -= grad_p_j;
+// 				);
+// 			}
+// 
+// 			sum_grad_p_k = sum_grad_p_k_avx.reduce();
+// 			grad_p_i[0] = grad_p_i_avx.x().reduce();
+// 			grad_p_i[1] = grad_p_i_avx.y().reduce();
+// 			grad_p_i[2] = grad_p_i_avx.z().reduce();
+// 
+// 			if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
+// 			{
+// 				forall_density_maps(
+// 					grad_p_i -= gradRho;
+// 				);
+// 			}
+// 			else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
+// 			{
+// 				forall_volume_maps(
+// 					const Vector3r grad_p_j = -Vj * sim->gradW(xi - xj);
+// 					grad_p_i -= grad_p_j;
+// 				);
+// 			}
+// 
+// 			sum_grad_p_k += grad_p_i.squaredNorm();
+// 
+// 			//////////////////////////////////////////////////////////////////////////
+// 			// Compute factor alpha_i / rho_i (see Equation (11) in [BK17])
+// 			//////////////////////////////////////////////////////////////////////////
+// 			Real& factor = m_simulationData.getFactor(fluidModelIndex, i);
+// 			if (sum_grad_p_k > m_eps)
+// 				factor = static_cast<Real>(1.0) / (sum_grad_p_k);
+// 			else
+// 				factor = 0.0;
+// 		}
+// 	}
+// }
+// 
+// /** Compute rho_adv,i^(0) (see equation in Section 3.3 in [BK17])
+//   * using the velocities after the non-pressure forces were applied.
+// **/
+// void TimeStepDFSPH::computeDensityAdv(const unsigned int fluidModelIndex, const unsigned int i, const Real h, const Real density0)
+// {
+// 	Simulation *sim = Simulation::getCurrent();
+// 	FluidModel *model = sim->getFluidModel(fluidModelIndex);
+// 	const Real &density = model->getDensity(i);
+// 	Real &densityAdv = m_simulationData.getDensityAdv(fluidModelIndex, i);
+// 	const Vector3r &xi = model->getPosition(i);
+// 	const Vector3r &vi = model->getVelocity(i);
+// 	Real delta = 0.0;
+// 	const unsigned int nFluids = sim->numberOfFluidModels();
+// 	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
+// 
+// 	Scalarf8 delta_avx(0.0f);
+// 	const Vector3f8 xi_avx(xi);
+// 	Vector3f8 vi_avx(vi);
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Fluid
+// 	//////////////////////////////////////////////////////////////////////////
+// 	forall_fluid_neighbors_avx_nox(
+// 		compute_xj(fm_neighbor, pid);
+// 		compute_Vj(fm_neighbor);
+// 		compute_Vj_gradW();
+// 		const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &fm_neighbor->getVelocity(0), count);
+// 		delta_avx += (vi_avx - vj_avx).dot(V_gradW);
+// 	);
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Boundary
+// 	//////////////////////////////////////////////////////////////////////////
+// 	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+// 	{
+// 		forall_boundary_neighbors_avx(
+// 			const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
+// 			const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVelocity(0), count);
+// 			delta_avx += Vj_avx * (vi_avx - vj_avx).dot(CubicKernel_AVX::gradW(xi_avx - xj_avx));
+// 		);
+// 	}
+// 
+// 	delta = delta_avx.reduce();
+// 
+// 	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
+// 	{
+// 		forall_density_maps(
+// 			Vector3r vj;
+// 			bm_neighbor->getPointVelocity(xi, vj);
+// 			delta -= (vi - vj).dot(gradRho);
+// 		);
+// 	}
+// 	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
+// 	{
+// 		forall_volume_maps(
+// 			Vector3r vj;
+// 			bm_neighbor->getPointVelocity(xj, vj);
+// 			delta += Vj * (vi - vj).dot(sim->gradW(xi - xj));
+// 		);
+// 	}
+// 
+// 	densityAdv = density / density0 + h*delta;
+// }
+// 
+// /** Compute rho_adv,i^(0) (see equation (9) in Section 3.2 [BK17])
+//   * using the velocities after the non-pressure forces were applied.
+//   */
+// void TimeStepDFSPH::computeDensityChange(const unsigned int fluidModelIndex, const unsigned int i, const Real h)
+// {
+// 	Simulation *sim = Simulation::getCurrent();
+// 	FluidModel *model = sim->getFluidModel(fluidModelIndex);
+// 	const Vector3r &xi = model->getPosition(i);
+// 	const Vector3r &vi = model->getVelocity(i);
+// 	unsigned int numNeighbors = 0;
+// 	const unsigned int nFluids = sim->numberOfFluidModels();
+// 	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
+// 
+// 	Scalarf8 densityAdv_avx(0.0f);
+// 	const Vector3f8 xi_avx(xi);
+// 	Vector3f8 vi_avx(vi);
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Fluid
+// 	//////////////////////////////////////////////////////////////////////////
+// 	forall_fluid_neighbors_avx_nox(
+// 		compute_xj(fm_neighbor, pid);
+// 		compute_Vj(fm_neighbor);
+// 		compute_Vj_gradW();
+// 		const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &fm_neighbor->getVelocity(0), count);
+// 		densityAdv_avx += (vi_avx - vj_avx).dot(V_gradW);
+// 	);
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Boundary
+// 	//////////////////////////////////////////////////////////////////////////
+// 	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+// 	{
+// 		forall_boundary_neighbors_avx(
+// 			const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
+// 			const Vector3f8 vj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVelocity(0), count);
+// 			densityAdv_avx += Vj_avx * (vi_avx - vj_avx).dot(CubicKernel_AVX::gradW(xi_avx - xj_avx));
+// 		);
+// 	}
+// 
+// 	Real &densityAdv = m_simulationData.getDensityAdv(fluidModelIndex, i);
+// 	densityAdv = densityAdv_avx.reduce();
+// 
+// 	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
+// 	{
+// 		forall_density_maps(
+// 			Vector3r vj;
+// 			bm_neighbor->getPointVelocity(xi, vj);
+// 			densityAdv -= (vi - vj).dot(gradRho);
+// 		);
+// 	}
+// 	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
+// 	{
+// 		forall_volume_maps(
+// 			Vector3r vj;
+// 			bm_neighbor->getPointVelocity(xj, vj);
+// 			densityAdv += Vj * (vi - vj).dot(sim->gradW(xi - xj));
+// 		);
+// 	}
+// }
+// 
+// /** Compute pressure accelerations using the current pressure values of the particles
+//  */
+// void TimeStepDFSPH::computePressureAccel(const unsigned int fluidModelIndex, const unsigned int i, const Real density0, std::vector<std::vector<Real>>& pressure_rho2, const bool applyBoundaryForces)
+// {
+// 	Simulation* sim = Simulation::getCurrent();
+// 	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+// 	const unsigned int nFluids = sim->numberOfFluidModels();
+// 	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
+// 
+// 	Vector3r& ai = m_simulationData.getPressureAccel(fluidModelIndex, i);
+// 
+// 	if (model->getParticleState(i) != ParticleState::Active)
+// 		return;
+// 
+// 	// p_rho2_i = (p_i / rho_i^2)
+// 	const Real p_rho2_i = pressure_rho2[fluidModelIndex][i];
+// 	const Vector3r &xi = model->getPosition(i);
+// 
+// 	Scalarf8 p_rho2_i_avx(p_rho2_i);
+// 	const Vector3f8 xi_avx(xi);
+// 	Vector3f8 delta_ai_avx;
+// 	delta_ai_avx.setZero();
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Fluid
+// 	//////////////////////////////////////////////////////////////////////////
+// 	forall_fluid_neighbors_avx_nox(
+// 		compute_xj(fm_neighbor, pid);
+// 		compute_Vj(fm_neighbor);
+// 		compute_Vj_gradW();
+// 		const Scalarf8 densityFrac_avx(fm_neighbor->getDensity0() / density0);
+// 
+// 		// p_rho2_j = (p_j / rho_j^2)
+// 		const Scalarf8 p_rho2_j_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &pressure_rho2[pid][0], count);
+// 		const Scalarf8 pSum = p_rho2_i_avx + densityFrac_avx * p_rho2_j_avx;
+// 		delta_ai_avx -= V_gradW * pSum;
+// 	)
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Boundary
+// 	//////////////////////////////////////////////////////////////////////////
+// 	if (fabs(p_rho2_i) > m_eps)
+// 	{
+// 		if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+// 		{
+// 			const Scalarf8 mi_avx(model->getMass(i));
+// 			forall_boundary_neighbors_avx(
+// 				const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
+// 
+// 				// Directly update velocities instead of storing pressure accelerations
+// 				const Vector3f8 a = -CubicKernel_AVX::gradW(xi_avx - xj_avx) * (Vj_avx * p_rho2_i_avx);
+// 				delta_ai_avx += a;
+// 
+// 				if (applyBoundaryForces)
+// 					bm_neighbor->addForce(xj_avx, -a * mi_avx, count);
+// 			);
+// 		}
+// 	}
+// 
+// 	ai[0] = delta_ai_avx.x().reduce();
+// 	ai[1] = delta_ai_avx.y().reduce();
+// 	ai[2] = delta_ai_avx.z().reduce();
+// 
+// 	if (fabs(p_rho2_i) > m_eps)
+// 	{
+// 		if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
+// 		{
+// 			forall_density_maps(
+// 				const Vector3r a = (Real) 1.0 * p_rho2_i * gradRho;
+// 				ai += a;
+// 
+// 				if (applyBoundaryForces)
+// 					bm_neighbor->addForce(xj, -model->getMass(i) * a);
+// 			);
+// 		}
+// 		else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
+// 		{
+// 			forall_volume_maps(
+// 				const Vector3r grad_p_j = -Vj * sim->gradW(xi - xj);
+// 				const Vector3r a = (Real) 1.0 * p_rho2_i * grad_p_j;
+// 				ai += a;
+// 
+// 				if (applyBoundaryForces)
+// 					bm_neighbor->addForce(xj, -model->getMass(i) * a);
+// 			);
+// 		}
+// 	}
+// }
+// 
+// 
+// Real TimeStepDFSPH::compute_aij_pj(const unsigned int fluidModelIndex, const unsigned int i)
+// {
+// 	Simulation* sim = Simulation::getCurrent();
+// 	FluidModel* model = sim->getFluidModel(fluidModelIndex);
+// 	const unsigned int nFluids = sim->numberOfFluidModels();
+// 	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Compute A*p which is the change of the density when applying the
+// 	// pressure forces.
+// 	// \sum_j a_ij * p_j = h^2 \sum_j V_j (a_i - a_j) * gradW_ij
+// 	// This is the RHS of Equation (12) in [BK17]
+// 	//////////////////////////////////////////////////////////////////////////
+// 	const Vector3r& xi = model->getPosition(i);
+// 	const Vector3r& ai = m_simulationData.getPressureAccel(fluidModelIndex, i);
+// 	const Vector3f8 xi_avx(xi);
+// 	const Vector3f8 ai_avx(ai);
+// 	Scalarf8 aij_pj_avx;
+// 	aij_pj_avx.setZero();
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Fluid
+// 	//////////////////////////////////////////////////////////////////////////
+// 	forall_fluid_neighbors_avx_nox(
+// 		compute_xj(fm_neighbor, pid);
+// 		compute_Vj(fm_neighbor);
+// 		compute_Vj_gradW();
+// 
+// 		const Vector3f8 aj_avx = convertVec_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &m_simulationData.getPressureAccel(pid, 0), count);
+// 		aij_pj_avx += (ai_avx - aj_avx).dot(V_gradW);
+// 	);
+// 
+// 	//////////////////////////////////////////////////////////////////////////
+// 	// Boundary
+// 	//////////////////////////////////////////////////////////////////////////
+// 	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
+// 	{
+// 		forall_boundary_neighbors_avx(
+// 			const Scalarf8 Vj_avx = convert_zero(&sim->getNeighborList(fluidModelIndex, pid, i)[j], &bm_neighbor->getVolume(0), count);
+// 			aij_pj_avx += Vj_avx * ai_avx.dot(CubicKernel_AVX::gradW(xi_avx - xj_avx));
+// 		);
+// 	}
+// 
+// 	Real aij_pj = aij_pj_avx.reduce();
+// 
+// 	if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
+// 	{
+// 		forall_density_maps(
+// 			aij_pj -= ai.dot(gradRho);
+// 		);
+// 	}
+// 	else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
+// 	{
+// 		forall_volume_maps(
+// 			aij_pj += Vj * ai.dot(sim->gradW(xi - xj));
+// 		);
+// 	}
+// 	return aij_pj;
+// }
+// 
+// 
+// #else
 
 void TimeStepDFSPH::computeDFSPHFactor(const unsigned int fluidModelIndex)
 {
@@ -1391,4 +1391,4 @@ Real TimeStepDFSPH::compute_aij_pj(const unsigned int fluidModelIndex, const uns
 }
 
 
- #endif
+ // #endif
