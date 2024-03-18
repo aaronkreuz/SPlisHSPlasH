@@ -16,7 +16,7 @@
 #include "SPlisHSPlasH/DFSPHbubble/TimeStepDFSPHbubble.h"
 #include "SPlisHSPlasH/DFSPHbubbleOp/TimeStepDFSPHbubbleOp.h"
 #include "SPlisHSPlasH/PCISPHbubble/TimeStepPCISPHbubble.h"
-#include "SPlisHSPlasH/DFSPHBubbleExperimental/TimeStepDFSPHbubbleExperimental.h"
+#include "SPlisHSPlasH/DFSPHbubbleExperimental/TimeStepDFSPHbubbleExperimental.h"
 #include "BoundaryModel_Akinci2012.h"
 #include "BoundaryModel_Bender2019.h"
 #include "BoundaryModel_Koschier2017.h"
