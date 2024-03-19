@@ -766,6 +766,8 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 	const Vector3r grav(sim->getVecValue<Real>(Simulation::GRAVITATION));
 	TimeManager* tm = TimeManager::getCurrent();
 	const Real h = tm->getTimeStepSize();
+	const Real p_diam = 2 * sim->getParticleRadius();
+	const Real p_diam2 = p_diam * p_diam;
 
 	// compute onSurface flag and updates of lifetime (multithreaded)
 	#pragma omp parallel default(shared)
@@ -841,7 +843,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 
 		// all particles of a bubble should disperse at once.
 		forall_fluid_neighbors_in_same_phase(
-			if ((xi-xj).squaredNorm() > (0.1*0.1)) {
+			if ((xi-xj).squaredNorm() > p_diam2) {
                 continue; // only propagate to close neighbors
             }
 			lifetime_i = std::min(lifetime_i, m_simulationData.getLifetime(neighborIndex));
