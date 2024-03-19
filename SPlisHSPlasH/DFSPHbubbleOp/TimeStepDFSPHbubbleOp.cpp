@@ -836,10 +836,14 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			continue;
 		}
 
+		Vector3r& xi = model->getPosition(i);
 		Real& lifetime_i = m_simulationData.getLifetime(i);
 
 		// all particles of a bubble should disperse at once.
 		forall_fluid_neighbors_in_same_phase(
+			if ((xi-xj).squaredNorm() > (0.1*0.1)) {
+                continue; // only propagate to close neighbors
+            }
 			lifetime_i = std::min(lifetime_i, m_simulationData.getLifetime(neighborIndex));
 		);
 
@@ -2239,7 +2243,7 @@ void TimeStepDFSPHbubbleOp::emitAirParticleFromVelocityField(unsigned int &numEm
 
 		// rng lifetime
 		static std::default_random_engine rng;
-		std::uniform_real_distribution<Real> lifetime(timeStepSize + m_eps, 1.0);
+		std::uniform_real_distribution<Real> lifetime(std::max<Real>(0.2, timeStepSize + m_eps), 1.0);
 
 		Real lifetime_i = lifetime(rng);
 		m_simulationData.setLifetime(indexNotReuse, lifetime_i);

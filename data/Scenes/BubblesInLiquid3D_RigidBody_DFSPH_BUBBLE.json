@@ -18,9 +18,9 @@
         "enableTrappedAir": true,
         "enableDivergenceSolver": true,
         "boundaryHandlingMethod": 2,
-        "vMinTrappedAir": 8.0,
-        "maxAirParticlesPerStep": 60,
-        "emitTimeDistance": 0.04,
+        "vMinTrappedAir": 3.0,
+        "maxAirParticlesPerStep": 100,
+        "emitTimeDistance": 0.025,
         "dataExportFPS": 30
     },
 
@@ -60,21 +60,24 @@
 		{
             "id": 1,
 			"geometryFile": "../models/cylinder.obj",
-			"translation": [0,1.5,0],
+			"translation": [0,2.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1.0, 3.0, 1.0],
-			"color": [0.1, 0.4, 0.6, 1.0], 
+			"scale": [1.2, 5.0, 1.2],
+            "collisionObjectType": 3,
+            "collisionObjectScale": [1.2, 5.0, 1.2],
+            "color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
+            "invertSDF": true,
 			"mapInvert": true, 
 			"mapThickness": 0.0,
-			"mapResolution": [20,20,20]
+			"mapResolution": [50,50,50]
 		},
 		{
 			"id": 2,
 			"geometryFile": "../models/torus.obj",
-			"isDynamic": 1, 
+			"isDynamic": true,
 			"density": 1000.0, 
 			"translation": [0.0,2.0,0.0],
 			"rotationAxis": [0, 0, 1],
@@ -102,7 +105,7 @@
 	],
     "FluidModels": [
 		{
-			"particleFile": "../models/waterPillarCylinder_rigidBody_r=0.02.bgeo",
+			"particleFile": "../models/waterPillarCylinder_rigidBody_1.2_r=0.02.bgeo",
 			"translation": [0.0, 0.0, 0.0],
             "id": "Liquid"
 		}
