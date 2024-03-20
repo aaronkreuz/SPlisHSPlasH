@@ -8,7 +8,7 @@
         "colorMapType": 1,
         "dataExportFPS": 30.0,
         "densityRatioCavitation": 0.5,
-        "emitTimeDistance": 0.02500000037252903,
+        "emitTimeDistance": 0.009999999776482582,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
         "enableIsolationCriterion": false,
