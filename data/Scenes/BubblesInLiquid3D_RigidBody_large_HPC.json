@@ -1,6 +1,6 @@
 {
     "Configuration": {
-        "boundaryHandlingMethod": 0,
+        "boundaryHandlingMethod": 2,
         "cflFactor": 0.5,
         "cflMaxTimeStepSize": 0.004999999888241291,
         "cflMethod": 0,
@@ -84,7 +84,7 @@
     "FluidModels": [
         {
             "id": "Liquid",
-            "particleFile": "../models/waterPillarCylinder_large_r=0.02_particleBoundary.bgeo",
+            "particleFile": "../models/waterPillarCylinder_large_r=0.02_volumeMap.bgeo",
             "translation": [
                 0.0,
                 0.0,
