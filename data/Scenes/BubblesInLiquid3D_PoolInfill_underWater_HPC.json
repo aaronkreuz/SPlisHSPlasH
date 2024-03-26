@@ -8,10 +8,10 @@
         "colorMapType": 1,
         "dataExportFPS": 30.0,
         "densityRatioCavitation": 0.5,
-        "emitTimeDistance": 0.05000000074505806,
+        "emitTimeDistance": 0.02500000037252903,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
-        "enableIsolationCriterion": true,
+        "enableIsolationCriterion": false,
         "enablePartioExport": true,
         "enableRigidBodyExport": false,
         "enableRigidBodyOBJExport": false,
@@ -29,9 +29,9 @@
             -9.8100004196167,
             0.0
         ],
-        "initialEmitTime": 1.0,
+        "initialEmitTime": 0.1,
         "kernel": 4,
-        "maxAirParticlesPerStep": 100,
+        "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 0.10000000149011612,
         "maxErrorV": 0.10000000149011612,
@@ -54,12 +54,12 @@
         "vDiffThresholdMin": 5.0,
         "vMinTrappedAir": 4.0,
         "velocityUpdateMethod": 0,
-        "vtTrappedAir": 0.44999998807907104
+        "vtTrappedAir": 0.699999988079071
     },
     "Emitters": [
         {
             "emitEndTime": 6,
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -73,12 +73,12 @@
                 -0.6
             ],
             "type": 1,
-            "velocity": 4.5,
+            "velocity": 4.2,
             "width": 3
         },
         {
             "emitEndTime": 6,
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -92,12 +92,12 @@
                 0.0
             ],
             "type": 1,
-            "velocity": 4,
+            "velocity": 4.0,
             "width": 3
         },
         {
             "emitEndTime": 6,
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -111,7 +111,7 @@
                 0.6
             ],
             "type": 1,
-            "velocity": 3.5,
+            "velocity": 3.8,
             "width": 3
         }
     ],

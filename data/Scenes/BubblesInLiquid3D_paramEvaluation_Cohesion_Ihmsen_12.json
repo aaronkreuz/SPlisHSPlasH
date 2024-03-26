@@ -47,7 +47,7 @@
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 8.0,
+        "stopAt": 5.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
@@ -295,7 +295,7 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 5.0,
+            "buoyancyMax": 4.0,
             "buoyancyMin": 1.399999976158142,
             "cohesionCoefficient": 12.0,
             "cohesionCoefficientNormal": 5.0,
