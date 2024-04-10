@@ -454,6 +454,12 @@ void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
 				const Real density_j = fm_neighbor->getDensity(neighborIndex);
 				const Vector3r& vj = fm_neighbor->getVelocity(neighborIndex);
 
+				// take the speed of sound in the respective fluid into account
+				Real speedSoundFluid = m_speedSoundAir;
+				if (fm_neighbor->getId() == "Liquid") {
+					speedSoundFluid = m_speedSoundWater;
+				}
+
 				const Real pi_ij = std::max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).norm() + m_eps * (h2)));
 				// const Real pi_ij = max(0.0f, ((vi - vj).dot(xi - xj))/((xi - xj).squaredNorm() + m_eps * (h2)));
 
@@ -463,7 +469,7 @@ void BubbleIhmsen::computeDragIhmsen(FluidModel* model){
                     gradKernel = m_L_air[i] * gradKernel;
                 }
 
-				acc_drag += m_j * ((dragConstant*h*m_speedSound)/(density_j + density_i)) * pi_ij * gradKernel;
+				acc_drag += m_j * ((dragConstant*h* speedSoundFluid)/(density_j + density_i)) * pi_ij * gradKernel;
 			);
 
 			acceleration += acc_drag;

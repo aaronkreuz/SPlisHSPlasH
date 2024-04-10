@@ -16,7 +16,8 @@ namespace SPH
 		Real m_dragConstantAir;
 		Real m_dragConstantLiq;
 		const Real m_eps = static_cast<Real>(1.0e-5);
-		const Real m_speedSound = static_cast<Real>(343.0);
+		const Real m_speedSoundAir = static_cast<Real>(343.0);
+		const Real m_speedSoundWater = static_cast<Real>(1500.0);
 		Real m_kmaxBuoyancy;
 		Real m_minBuoyancy;
 

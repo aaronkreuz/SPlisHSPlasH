@@ -1,95 +1,184 @@
 {
-    "Configuration":
-    {
-        "pause": true,
-        "sim2D": false,
-        "particleRadius": 0.025,
-        "colorMapType": 1,
-        "numberOfStepsPerRenderUpdate": 4,
-        "simulationMethod": 4,
-        "gravitation" : [0.0, -9.81, 0.0],
-        "cflMethod": 0,
-        "cflFactor": 1,
-        "cflMaxTimeStepSize": 0.005,
-        "maxIterations": 100,
-        "maxError": 0.1,
-        "maxIterationsV": 100,
-        "maxErrorV": 0.1,
-        "stiffness": 50000,
-        "exponent": 7,
-        "velocityUpdateMethod": 0,
-        "enableDivergenceSolver": true,
+    "Configuration": {
         "boundaryHandlingMethod": 0,
-        "timeStepSize": 0.001
+        "cflFactor": 1.0,
+        "cflMaxTimeStepSize": 0.004999999888241291,
+        "cflMethod": 0,
+        "cflMinTimeStepSize": 9.999999747378752e-05,
+        "colorMapType": 1,
+        "dataExportFPS": 25.0,
+        "enableAsyncExport": false,
+        "enableDivergenceSolver": true,
+        "enablePartioExport": false,
+        "enableRigidBodyExport": false,
+        "enableRigidBodyOBJExport": false,
+        "enableRigidBodyPLYExport": false,
+        "enableRigidBodyVTKExport": false,
+        "enableStateExport": false,
+        "enableVTKExport": false,
+        "enableZSort": 500,
+        "exponent": 7,
+        "gradKernel": 4,
+        "gravitation": [
+            0.0,
+            -9.8100004196167,
+            0.0
+        ],
+        "kernel": 4,
+        "maxError": 0.10000000149011612,
+        "maxErrorV": 0.10000000149011612,
+        "maxIterations": 100,
+        "maxIterationsV": 100,
+        "minIterations": 2,
+        "numberOfStepsPerRenderUpdate": 4,
+        "particleRadius": 0.025,
+        "pause": true,
+        "pauseAt": -1.0,
+        "renderWalls": 4,
+        "sim2D": false,
+        "simulationMethod": 4,
+        "stateExportFPS": 1.0,
+        "stiffness": 50000,
+        "stopAt": -1.0,
+        "timeStepSize": 0.0010000000474974513,
+        "velocityUpdateMethod": 0
     },
-
-    "Materials": [
-		{
-			"id": "Liquid",
-			"surfaceTension": 0.2,
-			"surfaceTensionMethod": 0,		
-			"viscosity": 0.01,
-			"viscosityMethod": 1, 
-			"vorticityMethod": 1, 
-			"vorticity": 0.1, 
-			"viscosityOmega": 0.05,
-			"inertiaInverse": 0.5,
-			"colorMapType": 0,
-            "density0": 1000.0,
-            "bubbleMethod": 1,
-            "renderModel": false
-		},
+    "Emitters": [
         {
+            "emitEndTime": 1.5,
+            "emitStartTime": 1.0,
+            "height": 3,
             "id": "Air2",
-            "maxEmitterParticles": 1000,
-            "emitterReuseParticles": false,
-            "emitterBoxMin": [-0.5, 0.0, -1.0],
-            "emitterBoxMax": [0.5, 0.5, 1.0],
-            "colorMapType": 0,
-            "density0": 350,
-            "viscosityMethod": 0,
-            "bubbleMethod": 0,
-            "surfaceTensionMethod": 4,
-            "surfaceTension": 300.0,
-            "renderModel": true
+            "rotationAngle": 1.57,
+            "rotationAxis": [
+                0,
+                0,
+                1
+            ],
+            "translation": [
+                0,
+                -0.1,
+                0.0
+            ],
+            "type": 0,
+            "velocity": 2.0,
+            "width": 3
         }
     ],
-
-    "Emitters": [
-		{
-			"width": 3, 
-			"height": 3, 
-			"translation": [0,-0.1,0.0],
-			"rotationAxis": [0, 0, 1],
-			"rotationAngle": 1.57,
-			"velocity": 2,
-			"type": 0,
-            "emitStartTime:": 2.0,
-			"emitEndTime": 2.5,
-            "id": "Air2"
-		}
-    ],
-
-    "RigidBodies": [
-		{
-			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,1.5,0],
-			"rotationAxis": [1, 0, 0],
-			"rotationAngle": 0,
-			"scale": [4, 3, 2],
-			"color": [0.1, 0.4, 0.6, 1.0], 
-			"isDynamic": false,
-			"isWall": true,
-			"mapInvert": true, 
-			"mapThickness": 0.0,
-			"mapResolution": [30,30,30]
-		}
-	],
     "FluidModels": [
         {
+            "id": "Liquid",
             "particleFile": "../models/waterPillar_bubble_solenthaler3D_r=0.025.bgeo",
-            "translation": [0.0, 0.0, 0.0],
-            "id": "Liquid"
+            "translation": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        }
+    ],
+    "Materials": [
+        {
+            "bubbleMethod": 1,
+            "colorField": "velocity",
+            "colorMapType": 0,
+            "density0": 1000.0,
+            "dragConstantLiq": 3.0,
+            "dragForceTypeLiq": 1,
+            "dragMethod": 0,
+            "elasticityMethod": 0,
+            "id": "Liquid",
+            "inertiaInverse": 0.5,
+            "renderMaxValue": 10.0,
+            "renderMinValue": 0.0,
+            "renderModel": false,
+            "surfaceTension": 0.20000000298023224,
+            "surfaceTensionBoundary": 0.009999999776482582,
+            "surfaceTensionMaxError": 0.0010000000474974513,
+            "surfaceTensionMaxIter": 100,
+            "surfaceTensionMethod": 4,
+            "surfaceTensionViscosity": 0.0,
+            "surfaceTensionViscosityBoundary": 0.0,
+            "surfaceTensionXSPH": 0.0,
+            "viscosity": 0.009999999776482582,
+            "viscosityBoundary": 0.0,
+            "viscosityMethod": 1,
+            "viscosityOmega": 0.05000000074505806,
+            "vorticity": 0.10000000149011612,
+            "vorticityMethod": 1,
+            "xsph": 0.0,
+            "xsphBoundary": 0.0
+        },
+        {
+            "bubbleMethod": 0,
+            "colorField": "velocity",
+            "colorMapType": 0,
+            "density0": 350,
+            "dragMethod": 0,
+            "elasticityMethod": 0,
+            "emitterBoxMax": [
+                0.5,
+                0.5,
+                1.0
+            ],
+            "emitterBoxMin": [
+                -0.5,
+                0.0,
+                -1.0
+            ],
+            "emitterReuseParticles": false,
+            "id": "Air2",
+            "maxEmitterParticles": 1000,
+            "renderMaxValue": 10.0,
+            "renderMinValue": 0.0,
+            "renderModel": true,
+            "surfaceTension": 15.0,
+            "surfaceTensionBoundary": 0.009999999776482582,
+            "surfaceTensionMaxError": 0.0010000000474974513,
+            "surfaceTensionMaxIter": 100,
+            "surfaceTensionMethod": 4,
+            "surfaceTensionViscosity": 0.0,
+            "surfaceTensionViscosityBoundary": 0.0,
+            "surfaceTensionXSPH": 0.0,
+            "viscosityMethod": 0,
+            "vorticityMethod": 0,
+            "xsph": 0.0,
+            "xsphBoundary": 0.0
+        }
+    ],
+    "RigidBodies": [
+        {
+            "color": [
+                0.1,
+                0.4,
+                0.6,
+                1.0
+            ],
+            "geometryFile": "../models/UnitBox.obj",
+            "isDynamic": false,
+            "isWall": true,
+            "mapInvert": true,
+            "mapResolution": [
+                30,
+                30,
+                30
+            ],
+            "mapThickness": 0.0,
+            "rotationAngle": 0,
+            "rotationAxis": [
+                1,
+                0,
+                0
+            ],
+            "scale": [
+                4,
+                3,
+                2
+            ],
+            "translation": [
+                0,
+                1.5,
+                0
+            ]
         }
     ]
 }

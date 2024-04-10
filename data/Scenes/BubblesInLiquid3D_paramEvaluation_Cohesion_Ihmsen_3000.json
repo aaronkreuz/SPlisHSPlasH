@@ -295,7 +295,7 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 4.0,
+            "buoyancyMax": 6.0,
             "buoyancyMin": 1.399999976158142,
             "cohesionCoefficient": 3000.0,
             "cohesionCoefficientNormal": 5.0,
