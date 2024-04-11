@@ -39,7 +39,7 @@
         "simulationMethod": 4,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": -1.0,
+        "stopAt": 10.0,
         "timeStepSize": 0.0010000000474974513,
         "velocityUpdateMethod": 0
     },
