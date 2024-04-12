@@ -45,8 +45,8 @@
     },
     "Emitters": [
         {
-            "emitEndTime": -1,
-            "emitStartTime": -1,
+            "emitEndTime": 1.5,
+            "emitStartTime": 1,
             "height": 3,
             "id": "Air2",
             "rotationAngle": 1.57,
@@ -120,7 +120,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 15.0,
+            "surfaceTension": 50.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,
@@ -134,28 +134,13 @@
             "xsphBoundary": 0.0
         }
     ],
-    "FluidBlocks":[
+    "FluidModels": [
         {
-            "denseMode": 0,
-            "end": [
-                0.9,
-                4.0,
-                0.9
-            ],
             "id": "Liquid",
-            "scale": [
-                1,
-                1,
-                1
-            ],
-            "start": [
-                -0.9,
-                0.1,
-                -0.9
-            ],
+            "particleFile": "../models/waterPillar_bubble_solenthaler3D_r=0.02.bgeo",
             "translation": [
                 0.0,
-                0.2,
+                0.0,
                 0.0
             ]
         }
