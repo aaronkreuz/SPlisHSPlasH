@@ -1,6 +1,6 @@
 {
     "Configuration": {
-        "boundaryHandlingMethod": 0,
+        "boundaryHandlingMethod": 2,
         "cflFactor": 1.0,
         "cflMaxTimeStepSize": 0.004999999888241291,
         "cflMethod": 0,
@@ -45,8 +45,8 @@
     },
     "Emitters": [
         {
-            "emitEndTime": 1.5,
-            "emitStartTime": 1.0,
+            "emitEndTime": -1,
+            "emitStartTime": -1,
             "height": 3,
             "id": "Air2",
             "rotationAngle": 1.57,
@@ -63,17 +63,6 @@
             "type": 0,
             "velocity": 1.0,
             "width": 3
-        }
-    ],
-    "FluidModels": [
-        {
-            "id": "Liquid",
-            "particleFile": "../models/waterPillar_bubble_solenthaler3D_r=0.025.bgeo",
-            "translation": [
-                0.0,
-                0.0,
-                0.0
-            ]
         }
     ],
     "Materials": [
@@ -145,6 +134,32 @@
             "xsphBoundary": 0.0
         }
     ],
+    "FluidBlocks":[
+        {
+            "denseMode": 0,
+            "end": [
+                0.9,
+                4.0,
+                0.9
+            ],
+            "id": "Liquid",
+            "scale": [
+                1,
+                1,
+                1
+            ],
+            "start": [
+                -0.9,
+                0.1,
+                -0.9
+            ],
+            "translation": [
+                0.0,
+                0.2,
+                0.0
+            ]
+        }
+    ],
     "RigidBodies": [
         {
             "color": [
@@ -158,9 +173,9 @@
             "isWall": true,
             "mapInvert": true,
             "mapResolution": [
-                30,
-                30,
-                30
+                50,
+                50,
+                50
             ],
             "mapThickness": 0.0,
             "rotationAngle": 0,
@@ -170,13 +185,13 @@
                 0
             ],
             "scale": [
-                4,
-                3,
+                2,
+                5,
                 2
             ],
             "translation": [
                 0,
-                1.5,
+                2,
                 0
             ]
         }

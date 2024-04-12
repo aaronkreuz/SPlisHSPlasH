@@ -47,7 +47,7 @@
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 5.0,
+        "stopAt": 10.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
