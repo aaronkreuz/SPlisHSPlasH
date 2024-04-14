@@ -30,7 +30,7 @@
             0.0
         ],
         "kernel": 4,
-        "maxAirParticlesPerStep": 100,
+        "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 1.0,
         "maxErrorV": 0.10000000149011612,
@@ -147,7 +147,7 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 5.0,
+            "buoyancyMax": 6.0,
             "buoyancyMin": 1.399999976158142,
             "cohesionCoefficient": 40.0,
             "cohesionCoefficientNormal": 5.0,
@@ -163,7 +163,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 4.0,
+            "surfaceTension": 5.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,
