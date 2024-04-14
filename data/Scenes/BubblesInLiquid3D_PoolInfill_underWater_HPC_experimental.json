@@ -12,7 +12,7 @@
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
         "enableIsolationCriterion": false,
-        "enablePartioExport": false,
+        "enablePartioExport": true,
         "enableRigidBodyExport": false,
         "enableRigidBodyOBJExport": false,
         "enableRigidBodyPLYExport": false,
