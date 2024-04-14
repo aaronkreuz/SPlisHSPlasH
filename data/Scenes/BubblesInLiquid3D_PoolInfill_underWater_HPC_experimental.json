@@ -12,7 +12,7 @@
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
         "enableIsolationCriterion": false,
-        "enablePartioExport": true,
+        "enablePartioExport": false,
         "enableRigidBodyExport": false,
         "enableRigidBodyOBJExport": false,
         "enableRigidBodyPLYExport": false,
@@ -29,7 +29,7 @@
             -9.8100004196167,
             0.0
         ],
-        "initialEmitTime": 1.0,
+        "initialEmitTime": 0.1,
         "kernel": 4,
         "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
@@ -54,12 +54,12 @@
         "vDiffThresholdMin": 5.0,
         "vMinTrappedAir": 3.0,
         "velocityUpdateMethod": 0,
-        "vtTrappedAir": 0.5
+        "vtTrappedAir": 0.800000011920929
     },
     "Emitters": [
         {
             "emitEndTime": 6,
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -78,7 +78,7 @@
         },
         {
             "emitEndTime": 6,
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -92,12 +92,12 @@
                 0.0
             ],
             "type": 1,
-            "velocity": 2.9,
+            "velocity": 2.8,
             "width": 3
         },
         {
             "emitEndTime": 6,
-            "emitStartTime": 1,
+            "emitStartTime": 0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -111,7 +111,7 @@
                 0.6
             ],
             "type": 1,
-            "velocity": 2.8,
+            "velocity": 2.6,
             "width": 3
         }
     ],
@@ -186,9 +186,9 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 4.0,
+            "buoyancyMax": 6.0,
             "buoyancyMin": 1.399999976158142,
-            "cohesionCoefficient": 10.0,
+            "cohesionCoefficient": 5.0,
             "cohesionCoefficientNormal": 5.0,
             "cohesionForceType": 5,
             "colorField": "velocity",
@@ -202,7 +202,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 10.0,
+            "surfaceTension": 5.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,
