@@ -30,7 +30,7 @@
             0.0
         ],
         "kernel": 4,
-        "maxAirParticlesPerStep": 100,
+        "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
         "maxErrorAir": 0.009999999776482582,
         "maxErrorV": 0.10000000149011612,
@@ -126,7 +126,7 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 4.0,
+            "buoyancyMax": 6.0,
             "buoyancyMin": 1.399999976158142,
             "cohesionCoefficient": 40.0,
             "cohesionCoefficientNormal": 5.0,

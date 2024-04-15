@@ -106,7 +106,7 @@
             "inertiaInverse": 0.5,
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
-            "renderModel": true,
+            "renderModel": false,
             "surfaceTension": 0.20000000298023224,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
@@ -126,7 +126,7 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 4.0,
+            "buoyancyMax": 6.0,
             "buoyancyMin": 1.399999976158142,
             "cohesionCoefficient": 40.0,
             "cohesionCoefficientNormal": 5.0,
