@@ -965,6 +965,7 @@ void TimeStepDFSPHbubbleOp::pressureSolve()
 	m_iterationsLiq = sim->getFluidModel(0)->getId() == "Liquid" ? iterations[0] : iterations[1];
 
 	INCREASE_COUNTER("DFSPH - iterations", static_cast<Real>(m_iterations));
+	INCREASE_COUNTER("DFSPH - iterations (air)", static_cast<Real>(m_iterationsAir));
 
 	for (unsigned int fluidModelIndex = 0; fluidModelIndex < nFluids; fluidModelIndex++)
 	{
