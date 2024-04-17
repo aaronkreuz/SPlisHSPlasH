@@ -34,6 +34,7 @@ namespace SPH
 		bool m_enableTrappedAir;
 		bool m_enableTrappedAirOptimization; // do not emit air particle if another air particle is too close (threshold)
 		bool m_enableIsolationCriterion; // reduce lifetime of particles if they have less than threshold neighbors
+		bool m_enableFoamDeletion; // enable lifetime reduction of foam particles
 
 		unsigned int m_iterationsLiq;
 		unsigned int m_iterationsAir;
@@ -126,6 +127,7 @@ namespace SPH
 		static int MAX_ERROR_AIR;
 		static int SURFACE_THRESHOLD_DENSITY_RATIO;
 		static int ENABLE_ISOLATION_CRITERION;
+		static int ENABLE_FOAM_DELETION;
 
 		// trapped air
 		static int TRAPPED_AIR_APPROACH;

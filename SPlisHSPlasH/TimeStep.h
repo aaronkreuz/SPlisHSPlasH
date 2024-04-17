@@ -19,7 +19,7 @@ namespace SPH
 		static int MAX_ERROR;
 
 	protected:
-		unsigned int m_iterations;	
+		unsigned int m_iterations;
 		Real m_maxError;
 		unsigned int m_minIterations;
 		unsigned int m_maxIterations;	

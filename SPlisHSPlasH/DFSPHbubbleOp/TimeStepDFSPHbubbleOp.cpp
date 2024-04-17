@@ -27,6 +27,7 @@ int TimeStepDFSPHbubbleOp::SOLVER_ITERATIONS_V_LIQ = -1;
 int TimeStepDFSPHbubbleOp::MAX_ERROR_AIR = -1;
 int TimeStepDFSPHbubbleOp::SURFACE_THRESHOLD_DENSITY_RATIO = -1;
 int TimeStepDFSPHbubbleOp::ENABLE_ISOLATION_CRITERION = -1;
+int TimeStepDFSPHbubbleOp::ENABLE_FOAM_DELETION = -1;
 
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR_OPTIMIZATION = -1;
@@ -58,6 +59,7 @@ TimeStepDFSPHbubbleOp::TimeStepDFSPHbubbleOp() :
 	m_enableTrappedAir = false;
 	m_enableTrappedAirOptimization = false;
 	m_enableIsolationCriterion = false;
+	m_enableFoamDeletion = true;
 	m_maxIterationsV = 100;
 	m_maxErrorV = static_cast<Real>(0.1);
 	m_vMinTrappedAir = static_cast<Real>(9.0);
@@ -228,6 +230,9 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	setGroup(ENABLE_ISOLATION_CRITERION, "Simulation|DFSPHbubble");
 	setDescription(ENABLE_ISOLATION_CRITERION, "Turn isolation criterion on/off.");
 
+	ENABLE_FOAM_DELETION = createBoolParameter("enableFoamDeletion", "Enable foam deletion", &m_enableFoamDeletion);
+	setGroup(ENABLE_FOAM_DELETION, "Simulation|DFSPHbubble");
+	setDescription(ENABLE_FOAM_DELETION, "Turn foam deletion on/off.");
 }
 
 void TimeStepDFSPHbubbleOp::step()
@@ -822,7 +827,7 @@ void TimeStepDFSPHbubbleOp::computeOnSurfaceAir(){
 			}
 
 			// ### lifetime update ####
-			if(onSurface || (m_enableIsolationCriterion && isolated)){
+			if(m_enableFoamDeletion && (onSurface || (m_enableIsolationCriterion && isolated))){
 				// if (liquidNeighbors < 3 && lifetime_i > h) {
 				// 	lifetime_i -= 2*h;
 				// }
