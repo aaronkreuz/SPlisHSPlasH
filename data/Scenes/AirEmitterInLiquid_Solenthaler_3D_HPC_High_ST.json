@@ -45,8 +45,8 @@
     },
     "Emitters": [
         {
-            "emitEndTime": 0.5,
-            "emitStartTime": 0,
+            "emitEndTime": 0.6,
+            "emitStartTime": 0.1,
             "height": 3,
             "id": "Air2",
             "rotationAngle": 1.57,
@@ -63,6 +63,17 @@
             "type": 0,
             "velocity": 1.0,
             "width": 3
+        }
+    ],
+    "FluidModels": [
+        {
+            "id": "Liquid",
+            "particleFile": "../models/waterPillar_bubble_solenthaler3D_r=0.02.bgeo",
+            "translation": [
+                0.0,
+                0.0,
+                0.0
+            ]
         }
     ],
     "Materials": [
@@ -101,7 +112,7 @@
             "bubbleMethod": 0,
             "colorField": "velocity",
             "colorMapType": 0,
-            "density0": 350,
+            "density0": 250,
             "dragMethod": 0,
             "elasticityMethod": 0,
             "emitterBoxMax": [
@@ -120,7 +131,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 3.0,
+            "surfaceTension": 15.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,
@@ -132,17 +143,6 @@
             "vorticityMethod": 0,
             "xsph": 0.0,
             "xsphBoundary": 0.0
-        }
-    ],
-    "FluidModels": [
-        {
-            "id": "Liquid",
-            "particleFile": "../models/waterPillar_bubble_solenthaler3D_r=0.02.bgeo",
-            "translation": [
-                0.0,
-                0.0,
-                0.0
-            ]
         }
     ],
     "RigidBodies": [
@@ -176,7 +176,7 @@
             ],
             "translation": [
                 0,
-                2,
+                2.5,
                 0
             ]
         }

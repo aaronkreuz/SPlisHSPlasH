@@ -58,11 +58,15 @@ namespace SPH
 		Real m_emitTimeDistance = static_cast<Real>(0.1); // AK 2024
 		unsigned int m_maxAirParticlesPerTimestep = static_cast<unsigned int>(20);
 
-		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011 and 2012
+		Real m_vMinTrappedAir = 9.0f; // Ihmsen et al. 2011
 		Real m_vtTrappedAir = 0.3f; // Ihmsen et al. 2011
 
 		Real m_vDiffThresholdMin = static_cast<Real>(5.0); // Ihmsen et al. 2012
 		Real m_vDiffThresholdMax = static_cast<Real>(20.0); // Ihmsen et al. 2012
+		Real m_kEnergyThresholdMin = static_cast<Real>(5.0); // Ihmsen et al. 2012
+		Real m_kEnergyThresholdMax = static_cast<Real>(50.0); // Ihmsen et al. 2012
+		Real m_potentialThreshold = static_cast<Real>(0.5); // Ihmsen et al. 2012
+
 
 		Real m_thresholdCavitationDensityRatio = static_cast<Real>(0.5); // AK 2024
 
@@ -102,7 +106,7 @@ namespace SPH
 
 		void computeOnSurfaceAir();
 		void trappedAirIhmsen2011(const unsigned int fluidModelIndex, const unsigned int i, unsigned int &numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
-		void trappedAirIhmsen2012(unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen);
+		void trappedAirIhmsen2012(const unsigned int liquidModelIndex, const unsigned int i, unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen);
 		void trappedAirCavitation(const unsigned int fluidModelIndex, const unsigned int i, unsigned int& numTrappedAirParticles, std::vector<unsigned int>& indicesGen);
 
 		void emitAirParticleFromVelocityField(unsigned int &numEmittedParticles, Vector3r vel, Vector3r pos);
@@ -142,6 +146,9 @@ namespace SPH
 		static int VT_TRAPPED_AIR;
 		static int VDIFF_THRESHOLD_MIN; // Ihmsen et al. 2012
 		static int VDIFF_THRESHOLD_MAX; // Ihmsen et al. 2012
+		static int K_ENERGEY_THRESHOLD_MIN; // Ihmsen et al. 2012
+		static int K_ENERGEY_THRESHOLD_MAX; // Ihmsen et al. 2012
+		static int POTENTIAL_THRESHOLD; // Ihmsen et al. 2012
 		static int MAX_AIR_PARTICLES_PER_STEP;
 		static int EMIT_TIME_DISTANCE;
 		static int DENSITY_RATIO_CAVITATION; // AK 2024

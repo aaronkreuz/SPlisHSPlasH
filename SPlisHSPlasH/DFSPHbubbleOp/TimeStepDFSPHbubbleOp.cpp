@@ -33,8 +33,12 @@ int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::USE_TRAPPED_AIR_OPTIMIZATION = -1;
 int TimeStepDFSPHbubbleOp::VMIN_TRAPPED_AIR = -1;
 int TimeStepDFSPHbubbleOp::VT_TRAPPED_AIR = -1;
-int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MIN = -1;
-int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MAX = -1;
+int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MIN = -1; // Ihmsen et al. 2012
+int TimeStepDFSPHbubbleOp::VDIFF_THRESHOLD_MAX = -1; // Ihmsen et al. 2012
+int TimeStepDFSPHbubbleOp::K_ENERGEY_THRESHOLD_MIN = -1; // Ihmsen et al. 2012
+int TimeStepDFSPHbubbleOp::K_ENERGEY_THRESHOLD_MAX = -1; // Ihmsen et al. 2012
+int TimeStepDFSPHbubbleOp::POTENTIAL_THRESHOLD = -1; // Ihmsen et al. 2012
+
 int TimeStepDFSPHbubbleOp::MAX_AIR_PARTICLES_PER_STEP = -1;
 int TimeStepDFSPHbubbleOp::EMIT_TIME_DISTANCE = -1;
 int TimeStepDFSPHbubbleOp::DENSITY_RATIO_CAVITATION = -1;
@@ -195,6 +199,18 @@ void TimeStepDFSPHbubbleOp::initParameters()
 	VDIFF_THRESHOLD_MAX = createNumericParameter("vDiffThresholdMax", "Ihmsen 2012: Max. threshold velocity difference", &m_vDiffThresholdMax);
 	setGroup(VDIFF_THRESHOLD_MAX, "Simulation|TrappedAir Extension");
 	setDescription(VDIFF_THRESHOLD_MAX, "Max. threshold velocity difference between liquid particle and its liquid neighbors for air particle generation.");
+
+	K_ENERGEY_THRESHOLD_MIN = createNumericParameter("kEnergyThresholdMin", "Ihmsen 2012: Min. threshold kinetic energy", &m_kEnergyThresholdMin);
+	setGroup(K_ENERGEY_THRESHOLD_MIN, "Simulation|TrappedAir Extension");
+	setDescription(K_ENERGEY_THRESHOLD_MIN, "Min. threshold kinetic energy for liquid particle for air particle generation.");
+
+	K_ENERGEY_THRESHOLD_MAX = createNumericParameter("kEnergyThresholdMax", "Ihmsen 2012: Max. threshold kinetic energy", &m_kEnergyThresholdMax);
+	setGroup(K_ENERGEY_THRESHOLD_MAX, "Simulation|TrappedAir Extension");
+	setDescription(K_ENERGEY_THRESHOLD_MAX, "Max. threshold kinetic energy for liquid particle for air particle generation.");
+
+	POTENTIAL_THRESHOLD = createNumericParameter("potentialThreshold", "Ihmsen 2012: Threshold potential", &m_potentialThreshold);
+	setGroup(POTENTIAL_THRESHOLD, "Simulation|TrappedAir Extension");
+	setDescription(POTENTIAL_THRESHOLD, "Threshold potential for liquid particle for air particle generation.");
 
 	INITIAL_EMIT_TIME = createNumericParameter("initialEmitTime", "Initial emit time trappedAir", &m_initialEmitTime);
 	setGroup(INITIAL_EMIT_TIME, "Simulation|TrappedAir Extension");
@@ -462,7 +478,11 @@ void TimeStepDFSPHbubbleOp::step()
 				}
 			}
 			else if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_IHMSEN2012) {
-				trappedAirIhmsen2012(emittedParticles, indicesGen);
+				for (unsigned int i = 0; i < nLiquidParticles; i++) {
+					if (emittedParticles < m_maxAirParticlesPerTimestep && liquid->getParticleState(i) == ParticleState::Active) {
+						trappedAirIhmsen2012(liquidModelIndex, i, emittedParticles, indicesGen);
+					}
+				}
 			}
 			else if (m_trappedAirApproach == ENUM_TRAPPED_AIR_APPROACH_CAVITATION) {
 				for (unsigned int i = 0; i < nLiquidParticles; i++) {
@@ -597,21 +617,22 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2011(const unsigned int liquidModelI
 
 
 // trapped air generation Ihmsen et al. 2012: "Unified spray, foam and air bubbles for particle-based fluids"
-void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen)
+void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(const unsigned int liquidModelIndex, const unsigned int i, unsigned int& emittedParticles, std::vector<unsigned int>& indicesGen)
 {
 	const Real v_min = m_vMinTrappedAir; // min. velocity for liquid particle to generate an air particle, original: 9.0
-	const Real tMin = m_vDiffThresholdMin; // original 5.0
-	const Real tMax = m_vDiffThresholdMax; // original 20.0
+	const Real tMin_ta = m_vDiffThresholdMin; // original 5.0
+	const Real tMax_ta = m_vDiffThresholdMax; // original 20.0
+	const Real tMin_k = m_kEnergyThresholdMin; // original 5.0
+	const Real tMax_k = m_kEnergyThresholdMax; // original 50.0
 
-	auto clamp = [&tMin, &tMax](const Real& v_diff){
+	auto clamp = [](const Real& tMin, const Real& tMax, const Real& v_diff){
 		return (min(v_diff, tMax) - min(v_diff, tMin)) / (tMax - tMin);
 	};
-
 
 	Simulation* sim = Simulation::getCurrent();
 	const Real& supportRadius = sim->getSupportRadius();
 	FluidModel* airModel = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(1) : sim->getFluidModel(0);
-	FluidModel* model = sim->getFluidModel(1)->getId() == "Air" ? sim->getFluidModel(0) : sim->getFluidModel(1); // liquid model -> naming convention
+	FluidModel* model = sim->getFluidModel(liquidModelIndex); 	// liquid model -> naming convention for makros
 
 	const unsigned int fluidModelIndex = model->getPointSetIndex();
 	const unsigned int numLiqParticles = model->numActiveParticles();
@@ -624,91 +645,93 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(unsigned int& emittedParticles,
 		return 0.0;
 	};
 
-
 	// reached limit of air particle in simulation
 	if ((airModel->numActiveParticles() >= airModel->numParticles()))
 		return;
 
-	// loop over liquid particles
-	for(int i = 0; i < numLiqParticles; i++){
+	const Vector3r& xi = model->getPosition(i);
+	const Vector3r& vi = model->getVelocity(i);
 
-		if (emittedParticles >= m_maxAirParticlesPerTimestep) {
-			return;
-		}
+	//////////////////////////////////////////////////////////////////////////
+	// extension AK: check if there is any air particle too close to the current liquid particle
+	if (m_enableTrappedAirOptimization) {
+		const Real radius = sim->getParticleRadius();
+		const Real diam = 2 * radius;
+		const unsigned int nFluids = sim->numberOfFluidModels();
 
-		if(model->getParticleState(i) != ParticleState::Active){
-			continue;
-        }
-
-		const Vector3r& xi = model->getPosition(i);
-		const Vector3r& vi = model->getVelocity(i);
-
-		// minimal required velocity for air emitting
-		if(vi.squaredNorm() < v_min)
-			continue;
-
-		//////////////////////////////////////////////////////////////////////////
-		// extension AK: check if there is any air particle too close to the current liquid particle
-		if (m_enableTrappedAirOptimization) {
-			const Real radius = sim->getParticleRadius();
-			const Real diam = 2 * radius;
-			const unsigned int nFluids = sim->numberOfFluidModels();
-
-			volatile bool isTooClose = false;
-			// loop over all air particles in this specific case
-			forall_fluid_neighbors_in_different_phase(
-				if (isTooClose) {
-					continue;
-				}
-
-				const Vector3r xij = xi - xj;
-				if (xij.squaredNorm() < (diam * diam)) {
-					isTooClose = true;
-				}
-			);
-
-			for (unsigned int k : indicesGen) {
-				if (isTooClose) {
-                    continue;
-                }
-
-                const Vector3r xik = xi - model->getPosition(k);
-				if (xik.squaredNorm() < (diam * diam)) {
-                    isTooClose = true;
-                }
-            }
-
+		volatile bool isTooClose = false;
+		// loop over all air particles in this specific case
+		forall_fluid_neighbors_in_different_phase(
 			if (isTooClose) {
-				// neighbor air particle too close -> skip this liquid particle
 				continue;
 			}
-		}
-		//////////////////////////////////////////////////////////////////////////
 
-		Real probability = 0;
-		Real v_diff = 0;
-
-		forall_fluid_neighbors_in_same_phase(
-			const Vector3r & vj = model->getVelocity(neighborIndex);
-
-			const Vector3r vij = vi - vj;
 			const Vector3r xij = xi - xj;
-			const Vector3r vij_normalized = vij.normalized();
-			const Vector3r xij_normalized = xij.normalized();
-
-			v_diff += vij.norm() * (1 - vij_normalized.dot(xij_normalized)) * customW(xij);
+			if (xij.squaredNorm() < (diam * diam)) {
+				isTooClose = true;
+			}
 		);
 
-		probability = clamp(v_diff);
+		for (unsigned int k : indicesGen) {
+			if (isTooClose) {
+				continue;
+			}
 
-		// generate a particle if probability is greater than threshold
-		if(probability < 0.5)
-			continue;
+			const Vector3r xik = xi - model->getPosition(k);
+			if (xik.squaredNorm() < (diam * diam)) {
+				isTooClose = true;
+			}
+		}
 
-		// emit air particle
-		emitAirParticleFromVelocityField(emittedParticles, vi, xi);
-		indicesGen.push_back(i);
+		if (isTooClose) {
+			// neighbor air particle too close -> skip this liquid particle
+			return;
+		}
 	}
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// compute trapped air potential
+	//////////////////////////////////////////////////////////////////////////
+	Real v_diff = 0;
+
+	forall_fluid_neighbors_in_same_phase(
+		const Vector3r& vj = model->getVelocity(neighborIndex);
+		const Vector3r vij = vi - vj;
+		const Vector3r xij = xi - xj;
+		const Real vij_norm = vij.norm();
+		const Vector3r xij_normalized = xij.normalized();
+		const Vector3r vij_normalized = vij.normalized();
+
+		v_diff += vij_norm * (1 - vij_normalized.dot(xij_normalized)) * customW(xij);
+	);
+
+	// trapped air potential
+	Real ta_potential = clamp(tMin_ta, tMax_ta, v_diff);
+
+	//////////////////////////////////////////////////////////////////////////
+	// compute kinetic energy potential
+	//////////////////////////////////////////////////////////////////////////
+	const Real& mass = model->getMass(i);
+	const Real vi_squaredNorm = vi.squaredNorm();
+	Real k_energy = 0.5 * mass * vi_squaredNorm;
+
+	// kinetic energy potential
+	Real k_potential = clamp(tMin_k, tMax_k, k_energy);
+
+	// combined potential: trapped air * kinetic energy
+	Real combined_potential = ta_potential * k_potential;
+
+	if(combined_potential > 0.1)
+		std::cout << combined_potential << std::endl;
+
+	// generate a particle if probability is greater than threshold
+	if (combined_potential < m_potentialThreshold)
+		return;
+
+	// emit air particle
+	emitAirParticleFromVelocityField(emittedParticles, vi, xi);
+	indicesGen.push_back(i);
 }
 
 // trapped air via cavitation phenomenon in low density areas. See Lugli and Zerbetto 2013: "An introduction to bubble dynamics"

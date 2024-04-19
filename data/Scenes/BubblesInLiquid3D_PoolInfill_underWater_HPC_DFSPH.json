@@ -11,7 +11,6 @@
         "emitTimeDistance": 0.03999999910593033,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
-        "enableFoamDeletion": true,
         "enableIsolationCriterion": false,
         "enablePartioExport": true,
         "enableRigidBodyExport": false,
@@ -31,8 +30,6 @@
             0.0
         ],
         "initialEmitTime": 0.1,
-        "kEnergyThresholdMax": 50.0,
-        "kEnergyThresholdMin": 5.0,
         "kernel": 4,
         "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
@@ -46,12 +43,11 @@
         "particleRadius": 0.02,
         "pause": true,
         "pauseAt": -1.0,
-        "potentialThreshold": 0.5,
         "renderWalls": 4,
-        "simulationMethod": 11,
+        "simulationMethod": 4,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 20.0,
+        "stopAt": 10.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
@@ -119,32 +115,6 @@
             "width": 3
         }
     ],
-    "FluidBlocks": [
-        {
-            "denseMode": 0,
-            "end": [
-                -0.05,
-                0.15,
-                0.2
-            ],
-            "id": "Air",
-            "scale": [
-                1,
-                1,
-                1
-            ],
-            "start": [
-                -0.1,
-                0.1,
-                0.15
-            ],
-            "translation": [
-                0.0,
-                0.025,
-                0.0
-            ]
-        }
-    ],
     "FluidModels": [
         {
             "id": "Liquid",
@@ -183,39 +153,6 @@
             "viscosityBoundary": 0.0,
             "viscosityMethod": 1,
             "viscosityOmega": 0.05,
-            "vorticityMethod": 0,
-            "xsph": 0.0,
-            "xsphBoundary": 0.0
-        },
-        {
-            "bubbleMethod": 1,
-            "buoyancyForceType": 1,
-            "buoyancyMax": 6.0,
-            "buoyancyMin": 1.399999976158142,
-            "cohesionCoefficient": 5.0,
-            "cohesionCoefficientNormal": 5.0,
-            "cohesionForceType": 5,
-            "colorField": "velocity",
-            "colorMapType": 0,
-            "density0": 1.0,
-            "dragConstantAir": 8.0,
-            "dragForceTypeAir": 1,
-            "dragMethod": 0,
-            "elasticityMethod": 0,
-            "id": "Air",
-            "renderMaxValue": 10.0,
-            "renderMinValue": 0.0,
-            "renderModel": true,
-            "surfaceTension": 5.0,
-            "surfaceTensionBoundary": 0.009999999776482582,
-            "surfaceTensionMaxError": 0.0010000000474974513,
-            "surfaceTensionMaxIter": 100,
-            "surfaceTensionMethod": 4,
-            "surfaceTensionViscosity": 0.0,
-            "surfaceTensionViscosityBoundary": 0.0,
-            "surfaceTensionXSPH": 0.0,
-            "useGradientCorrection": false,
-            "viscosityMethod": 0,
             "vorticityMethod": 0,
             "xsph": 0.0,
             "xsphBoundary": 0.0
