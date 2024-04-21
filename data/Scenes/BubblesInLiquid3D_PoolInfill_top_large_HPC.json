@@ -11,6 +11,7 @@
         "emitTimeDistance": 0.03999999910593033,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
+        "enableFoamDeletion": true,
         "enableIsolationCriterion": false,
         "enablePartioExport": true,
         "enableRigidBodyExport": false,
@@ -29,10 +30,12 @@
             -9.8100004196167,
             0.0
         ],
+        "kEnergyThresholdMax": 50.0,
+        "kEnergyThresholdMin": 5.0,
         "kernel": 4,
         "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
-        "maxErrorAir": 1.0,
+        "maxErrorAir": 0.10000000149011612,
         "maxErrorV": 0.10000000149011612,
         "maxIterations": 100,
         "maxIterationsV": 100,
@@ -42,6 +45,7 @@
         "particleRadius": 0.02,
         "pause": true,
         "pauseAt": -1.0,
+        "potentialThreshold": 0.5,
         "renderWalls": 4,
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
@@ -51,9 +55,9 @@
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
         "vDiffThresholdMin": 5.0,
-        "vMinTrappedAir": 4.5,
+        "vMinTrappedAir": 5.0,
         "velocityUpdateMethod": 0,
-        "vtTrappedAir": 0.4000000059604645
+        "vtTrappedAir": 0.44999998807907104
     },
     "Emitters": [
         {
