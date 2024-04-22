@@ -39,7 +39,7 @@
         "simulationMethod": 4,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 10.0,
+        "stopAt": 15.0,
         "timeStepSize": 0.0010000000474974513,
         "velocityUpdateMethod": 0
     },
@@ -112,7 +112,7 @@
             "bubbleMethod": 0,
             "colorField": "velocity",
             "colorMapType": 0,
-            "density0": 300,
+            "density0": 500,
             "dragMethod": 0,
             "elasticityMethod": 0,
             "emitterBoxMax": [
@@ -131,7 +131,7 @@
             "renderMaxValue": 10.0,
             "renderMinValue": 0.0,
             "renderModel": true,
-            "surfaceTension": 50.0,
+            "surfaceTension": 3.0,
             "surfaceTensionBoundary": 0.009999999776482582,
             "surfaceTensionMaxError": 0.0010000000474974513,
             "surfaceTensionMaxIter": 100,
