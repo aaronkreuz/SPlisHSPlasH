@@ -371,7 +371,10 @@ void BubbleIhmsen::computeBuoyancyIhmsen(FluidModel* model){
 			Vector3r acc_bouyancy = Vector3r::Zero();
 
 			// look for number of air particle neighbors
-			int numNeighbors = sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i);
+			int numNeighbors = sim->numberOfNeighbors(fluidModelIndex, fluidModelIndex, i) + 1;
+
+			// if (numNeighbors == 1)
+			// 	numNeighbors += 1;
 
 			// equation (10)
 			acc_bouyancy = m_minBuoyancy * (m_kmaxBuoyancy - (m_kmaxBuoyancy - 1) * exp(-0.1 * numNeighbors)) * grav;
