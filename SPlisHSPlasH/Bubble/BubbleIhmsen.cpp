@@ -298,8 +298,6 @@ void BubbleIhmsen::computeCohesionAkinci2013(FluidModel* model){
 			accel += K_ij * a_ij;
 		);
 	}
-
-	// TODO: Should I consider the boundary here?
 }
 
 void SPH::BubbleIhmsen::computeGradientCorrection(void)

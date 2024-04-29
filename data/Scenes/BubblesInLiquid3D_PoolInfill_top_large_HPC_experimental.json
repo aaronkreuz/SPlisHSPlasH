@@ -8,9 +8,10 @@
         "colorMapType": 1,
         "dataExportFPS": 30.0,
         "densityRatioCavitation": 0.5,
-        "emitTimeDistance": 0.009999999776482582,
+        "emitTimeDistance": 0.03999999910593033,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
+        "enableFoamDeletion": true,
         "enableIsolationCriterion": false,
         "enablePartioExport": true,
         "enableRigidBodyExport": false,
@@ -29,10 +30,12 @@
             -9.8100004196167,
             0.0
         ],
+        "kEnergyThresholdMax": 50.0,
+        "kEnergyThresholdMin": 5.0,
         "kernel": 4,
         "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
-        "maxErrorAir": 0.009999999776482582,
+        "maxErrorAir": 0.10000000149011612,
         "maxErrorV": 0.10000000149011612,
         "maxIterations": 100,
         "maxIterationsV": 100,
@@ -42,19 +45,41 @@
         "particleRadius": 0.02,
         "pause": true,
         "pauseAt": -1.0,
+        "potentialThreshold": 0.5,
         "renderWalls": 4,
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 10.0,
+        "stopAt": 12.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
         "vDiffThresholdMin": 5.0,
-        "vMinTrappedAir": 3.0,
+        "vMinTrappedAir": 5.0,
         "velocityUpdateMethod": 0,
-        "vtTrappedAir": 0.30000001192092896
+        "vtTrappedAir": 0.44999998807907104
     },
+    "Emitters": [
+        {
+            "emitEndTime": 8.0,
+            "emitStartTime": 0.0,
+            "id": "Liquid",
+            "rotationAngle": 0,
+            "rotationAxis": [
+                0,
+                1,
+                0
+            ],
+            "translation": [
+                -1.5,
+                3.0,
+                0
+            ],
+            "type": 1,
+            "velocity": 2,
+            "width": 7
+        }
+    ],
     "FluidBlocks": [
         {
             "denseMode": 0,
@@ -84,7 +109,7 @@
     "FluidModels": [
         {
             "id": "Liquid",
-            "particleFile": "../models/waterPillarCylinder_rigidBody_1.2_r=0.02.bgeo",
+            "particleFile": "../models/waterPillarCylinder_PoolInfill_r=0.02_large.bgeo",
             "translation": [
                 0.0,
                 0.0,
@@ -126,8 +151,8 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 6.0,
-            "buoyancyMin": 1.399999976158142,
+            "buoyancyMax": 2.799999952316284,
+            "buoyancyMin": 3.200000047683716,
             "cohesionCoefficient": 40.0,
             "cohesionCoefficientNormal": 5.0,
             "cohesionForceType": 5,
@@ -159,12 +184,6 @@
     ],
     "RigidBodies": [
         {
-            "collisionObjectScale": [
-                1.2,
-                5.0,
-                1.2
-            ],
-            "collisionObjectType": 3,
             "color": [
                 0.1,
                 0.4,
@@ -173,7 +192,6 @@
             ],
             "geometryFile": "../models/cylinder.obj",
             "id": 1,
-            "invertSDF": true,
             "isDynamic": false,
             "isWall": true,
             "mapInvert": true,
@@ -190,57 +208,14 @@
                 0
             ],
             "scale": [
-                1.2,
-                5.0,
-                1.2
-            ],
-            "translation": [
-                0,
-                2.5,
-                0
-            ]
-        },
-        {
-            "collisionObjectScale": [
-                0.2,
-                0.1,
-                0.2
-            ],
-            "collisionObjectType": 4,
-            "color": [
-                0.5,
-                0.2,
-                0.6,
-                1.0
-            ],
-            "density": 1000.0,
-            "friction": 0.2,
-            "geometryFile": "../models/torus.obj",
-            "id": 2,
-            "isDynamic": true,
-            "mapInvert": false,
-            "mapResolution": [
-                20,
-                20,
-                20
-            ],
-            "mapThickness": 0.0,
-            "restitution": 0.6,
-            "rotationAngle": 1.0,
-            "rotationAxis": [
-                0,
-                0,
-                1
-            ],
-            "scale": [
-                0.2,
-                0.2,
-                0.2
-            ],
-            "translation": [
-                0.0,
                 2.0,
-                0.0
+                6.0,
+                2.0
+            ],
+            "translation": [
+                0,
+                3.0,
+                0
             ]
         }
     ]
