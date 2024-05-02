@@ -65,17 +65,6 @@
             "width": 3
         }
     ],
-    "FluidModels": [
-        {
-            "id": "Liquid",
-            "particleFile": "../models/waterPillar_bubble_solenthaler3D_shallow_r=0.02.bgeo",
-            "translation": [
-                0.0,
-                0.0,
-                0.0
-            ]
-        }
-    ],
     "Materials": [
         {
             "bubbleMethod": 1,
@@ -143,6 +132,17 @@
             "vorticityMethod": 0,
             "xsph": 0.0,
             "xsphBoundary": 0.0
+        }
+    ],
+    "FluidModels": [
+        {
+            "id": "Liquid",
+            "particleFile": "../models/waterPillar_bubble_solenthaler3D_shallower_r=0.02.bgeo",
+            "translation": [
+                0.0,
+                0.0,
+                0.0
+            ]
         }
     ],
     "RigidBodies": [
