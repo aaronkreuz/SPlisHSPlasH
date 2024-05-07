@@ -722,9 +722,6 @@ void TimeStepDFSPHbubbleOp::trappedAirIhmsen2012(const unsigned int liquidModelI
 	// combined potential: trapped air * kinetic energy
 	Real combined_potential = ta_potential * k_potential;
 
-	if(combined_potential > 0.1)
-		std::cout << combined_potential << std::endl;
-
 	// generate a particle if probability is greater than threshold
 	if (combined_potential < m_potentialThreshold)
 		return;
