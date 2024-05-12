@@ -1,6 +1,6 @@
 {
     "Configuration": {
-        "boundaryHandlingMethod": 2,
+        "boundaryHandlingMethod": 0,
         "cflFactor": 0.5,
         "cflMaxTimeStepSize": 0.004999999888241291,
         "cflMethod": 0,
@@ -11,6 +11,7 @@
         "emitTimeDistance": 0.03999999910593033,
         "enableAsyncExport": false,
         "enableDivergenceSolver": true,
+        "enableFoamDeletion": true,
         "enableIsolationCriterion": false,
         "enablePartioExport": true,
         "enableRigidBodyExport": false,
@@ -30,6 +31,8 @@
             0.0
         ],
         "initialEmitTime": 0.1,
+        "kEnergyThresholdMax": 50.0,
+        "kEnergyThresholdMin": 5.0,
         "kernel": 4,
         "maxAirParticlesPerStep": 500,
         "maxError": 0.10000000149011612,
@@ -43,23 +46,24 @@
         "particleRadius": 0.02,
         "pause": true,
         "pauseAt": -1.0,
+        "potentialThreshold": 0.5,
         "renderWalls": 4,
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 10.0,
+        "stopAt": 15.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
         "vDiffThresholdMin": 5.0,
-        "vMinTrappedAir": 2.0,
+        "vMinTrappedAir": 2.5,
         "velocityUpdateMethod": 0,
         "vtTrappedAir": 0.5
     },
     "Emitters": [
         {
-            "emitEndTime": 6,
-            "emitStartTime": 0,
+            "emitEndTime": 6.5,
+            "emitStartTime": 0.5,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -69,16 +73,16 @@
             ],
             "translation": [
                 -1.0,
-                0.25,
-                -0.6
+                0.4,
+                -1.0
             ],
             "type": 1,
             "velocity": 3.0,
             "width": 3
         },
         {
-            "emitEndTime": 6,
-            "emitStartTime": 0,
+            "emitEndTime": 6.5,
+            "emitStartTime": 0.5,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -88,7 +92,7 @@
             ],
             "translation": [
                 -1.0,
-                0.25,
+                0.4,
                 0.0
             ],
             "type": 1,
@@ -96,8 +100,8 @@
             "width": 3
         },
         {
-            "emitEndTime": 6,
-            "emitStartTime": 0,
+            "emitEndTime": 6.5,
+            "emitStartTime": 0.5,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -107,8 +111,8 @@
             ],
             "translation": [
                 -1.0,
-                0.25,
-                0.6
+                0.4,
+                1.0
             ],
             "type": 1,
             "velocity": 2.6,
@@ -144,7 +148,7 @@
     "FluidModels": [
         {
             "id": "Liquid",
-            "particleFile": "../models/waterPillarCube_underWaterEmitters_r=0.02.bgeo",
+            "particleFile": "../models/waterPillarCube_underWaterEmitters_r=0.02_large_high_PB.bgeo",
             "translation": [
                 0.0,
                 0.0,
@@ -186,8 +190,8 @@
         {
             "bubbleMethod": 1,
             "buoyancyForceType": 1,
-            "buoyancyMax": 6.0,
-            "buoyancyMin": 1.399999976158142,
+            "buoyancyMax": 2.799999952316284,
+            "buoyancyMin": 3.200000047683716,
             "cohesionCoefficient": 5.0,
             "cohesionCoefficientNormal": 5.0,
             "cohesionForceType": 5,
@@ -231,9 +235,9 @@
             "isWall": true,
             "mapInvert": true,
             "mapResolution": [
-                20,
-                20,
-                20
+                100,
+                100,
+                100
             ],
             "mapThickness": 0.0,
             "rotationAngle": 0,
@@ -243,9 +247,9 @@
                 0
             ],
             "scale": [
-                2.0,
+                2.1,
                 5.0,
-                2.0
+                3.1
             ],
             "translation": [
                 0,
