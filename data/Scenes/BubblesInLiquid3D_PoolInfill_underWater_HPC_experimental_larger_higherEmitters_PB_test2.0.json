@@ -62,8 +62,8 @@
     },
     "Emitters": [
         {
-            "emitEndTime": 6.5,
-            "emitStartTime": 0.5,
+            "emitEndTime": 10.5,
+            "emitStartTime": 4.5,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -81,8 +81,8 @@
             "width": 3
         },
         {
-            "emitEndTime": 6.5,
-            "emitStartTime": 0.5,
+            "emitEndTime": 10.5,
+            "emitStartTime": 4.5,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
@@ -100,8 +100,8 @@
             "width": 3
         },
         {
-            "emitEndTime": 6.5,
-            "emitStartTime": 0.5,
+            "emitEndTime": 10.5,
+            "emitStartTime": 4.5,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
