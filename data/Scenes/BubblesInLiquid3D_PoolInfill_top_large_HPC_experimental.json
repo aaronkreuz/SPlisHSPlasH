@@ -50,7 +50,7 @@
         "simulationMethod": 11,
         "stateExportFPS": 1.0,
         "stiffness": 50000,
-        "stopAt": 12.0,
+        "stopAt": 20.0,
         "timeStepSize": 0.0010000000474974513,
         "trappedAirApproach": 1,
         "vDiffThresholdMax": 20.0,
@@ -61,8 +61,8 @@
     },
     "Emitters": [
         {
-            "emitEndTime": 8.0,
-            "emitStartTime": 0.0,
+            "emitEndTime": 12.0,
+            "emitStartTime": 4.0,
             "id": "Liquid",
             "rotationAngle": 0,
             "rotationAxis": [
