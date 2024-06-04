@@ -58,7 +58,7 @@
         "vDiffThresholdMin": 5.0,
         "vMinTrappedAir": 3.0,
         "velocityUpdateMethod": 0,
-        "vtTrappedAir": 0.9
+        "vtTrappedAir": 0.8
     },
     "Emitters": [
         {
